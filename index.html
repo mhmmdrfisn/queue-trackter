@@ -16,13 +16,7 @@
             -webkit-tap-highlight-color: transparent;
             background-color: #ffffff;
             color: #171717;
-            overscroll-behavior-y: none; 
-            /* SECURITY: Disable global text selection & interaction to prevent copying */
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            -webkit-user-drag: none;
+            overscroll-behavior-y: none;
         }
         
         /* Custom Scrollbar for Minimalist UI */
@@ -31,7 +25,8 @@
         ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
         
-        .no-select { user-select: none; }
+        /* Mencegah teks ter-highlight saat tombol diklik berulang kali saat observasi */
+        .no-select { user-select: none; -webkit-user-select: none; }
 
         .brutal-btn { transition: all 0.1s ease-in-out; }
         .brutal-btn:active { transform: scale(0.97); }
@@ -41,9 +36,6 @@
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
-        
-        /* SECURITY: Allow input text selection */
-        input { user-select: auto; -webkit-user-select: auto; }
 
         /* Animation for custom Toasts */
         @keyframes slideDown {
@@ -412,7 +404,7 @@
                         <i data-lucide="info" class="w-4 h-4"></i> Konsep Aplikasi
                     </h3>
                     <p class="text-sm text-gray-700 leading-relaxed font-medium">
-                        Aplikasi ini mendigitalisasi proses observasi manual teori antrean. Berfungsi ganda sebagai <strong>Tally Counter pintar</strong> di lapangan, sekaligus <strong>Kalkulator Analitis</strong> yang langsung menerapkan rumus M/M/s (Model Kendall) berdasarkan data observasi Anda. Dilengkapi proteksi keamanan untuk keaslian data observasi.
+                        Aplikasi ini mendigitalisasi proses observasi manual teori antrean. Berfungsi ganda sebagai <strong>Tally Counter pintar</strong> di lapangan, sekaligus <strong>Kalkulator Analitis</strong> yang langsung menerapkan rumus M/M/s (Model Kendall) berdasarkan data observasi Anda. Seluruh pemrosesan berjalan di browser tanpa server.
                     </p>
                 </div>
 
@@ -521,25 +513,7 @@
     <script>
         lucide.createIcons();
 
-        // === 1. PROTEKSI DATA OBSERVASI ===
-        // Mencegah akses source code saat praktikum berlangsung.
-        document.addEventListener('contextmenu', e => { e.preventDefault(); UI.showToast('Tindakan Dilarang: Akses Sistem Terkunci', 'error'); });
-        document.addEventListener('dragstart', e => e.preventDefault());
-
-        document.onkeydown = function(e) {
-            // F12 dan F5
-            if(e.keyCode == 123 || e.keyCode == 116) { e.preventDefault(); UI.showToast('Security Alert: Action Blocked', 'error'); return false; }
-            // Ctrl+Shift+I / C / J
-            if(e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 67 || e.keyCode == 74)) { e.preventDefault(); return false; }
-            // Ctrl+U / S / R
-            if(e.ctrlKey && !e.shiftKey && (e.keyCode == 85 || e.keyCode == 83 || e.keyCode == 82)) {
-                e.preventDefault();
-                UI.showToast('Security Alert: Source Action Blocked', 'error');
-                return false;
-            }
-        };
-
-        // === 2. WAKE LOCK API (CEGAH LAYAR MATI) ===
+        // === 1. WAKE LOCK API (CEGAH LAYAR MATI) ===
         let wakeLock = null;
         const requestWakeLock = async () => {
             try {
@@ -564,7 +538,7 @@
         });
 
 
-        // === 3. CUSTOM UI ENGINE (MODAL & TOAST) ===
+        // === 2. CUSTOM UI ENGINE (MODAL & TOAST) ===
         const UI = {
             showToast(message, type = 'info') {
                 const container = document.getElementById('sys-toast-container');
@@ -610,7 +584,7 @@
             }
         };
 
-        // === 4. PORTFOLIO DATA MANAGER ===
+        // === 3. PORTFOLIO DATA MANAGER ===
         const MY_PROJECTS = [
             {
                 title: "Virtual Tour Campus Tel-U",
@@ -703,7 +677,7 @@
         }
         renderPortfolio();
 
-        // === 5. CORE APP LOGIC & AUTO-SAVE (LOCAL STORAGE) ===
+        // === 4. CORE APP LOGIC & AUTO-SAVE (LOCAL STORAGE) ===
         const APP = {
             view: 'tracker',
             isRecording: false,
@@ -1090,7 +1064,7 @@
             document.getElementById('stat-total-served').innerText = APP.data.serviceLogs.length;
         }
 
-        // === 6. DATA ANALYSIS & CALC ===
+        // === 5. DATA ANALYSIS & CALC ===
         function resetData() {
             UI.showModal(
                 "Hapus Log Observasi?",
@@ -1376,7 +1350,7 @@
             ['calc-wq-min','calc-ws-min'].forEach(id => document.getElementById(id).innerText = "");
         }
 
-        // === 7. LAPORAN & EKSPOR ===
+        // === 6. LAPORAN & EKSPOR ===
         // Satu sumber kebenaran untuk laporan dan ekspor Excel.
         function buildReport() {
             const ses = activeSession();
