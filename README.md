@@ -24,14 +24,51 @@ Fitur pendukung:
 - **Auto-stop** — observasi berhenti otomatis saat durasi target habis.
 - **Wake Lock** — layar tidak mati selama observasi berjalan.
 - **Auto-save** — state tersimpan di `localStorage`, aman saat browser ditutup.
-- **Ekspor CSV** — unduh laporan beserta rekap seluruh durasi pelayanan.
+- **Presisi milidetik** — durasi pelayanan diukur dengan `Date.now()`, bukan tick timer
+  1 detik, sehingga layanan singkat tidak ikut dibulatkan.
+- **Riwayat kejadian** — setiap kedatangan dan setiap layanan tercatat lengkap
+  (server mana, mulai, selesai, durasi), sehingga laporan bisa diaudit.
+
+---
+
+## Ekspor Laporan
+
+Tombol di tab **Analysis** menghasilkan laporan yang siap dikumpulkan.
+Semuanya diturunkan dari satu fungsi `buildReport()`, sehingga angka pada
+tampilan, CSV, Excel, dan Print **selalu identik**.
+
+| Tombol | Keluaran |
+|---|---|
+| **Excel** | `.xls` (SpreadsheetML) berisi 5 sheet: Ringkasan, Hasil M-M-s, Per Server, Log Layanan, Log Kedatangan |
+| **CSV** | Teks berformat daftar bagian (A–G), mudah ditempel ke laporan |
+| **Print** | Cetak langsung ke printer / simpan sebagai PDF dari dialog cetak |
+
+### Isi laporan
+
+```
+A. IDENTITAS OBSERVASI   lokasi, pengamat, tanggal, waktu mulai/selesai,
+                         durasi target & aktual, jumlah server, cara berhenti
+B. DATA OBSERVASI        total kedatangan, total dilayani, belum dilayani,
+                         rasio pelayanan, rata-rata durasi, rata-rata jarak kedatangan
+C. RINCIAN PER SERVER    jumlah dilayani, total/rata-rata/min/max durasi, utilisitas
+D. PARAMETER SISTEM      λ, μ, ρ, kapasitas total, selisih kapasitas
+E. HASIL M/M/s           P₀, Lq, Ls, Wq, Ws (dalam jam & menit)
+F. RUMUS YANG DIGUNAKAN   daftar rumus sehingga angka bisa ditelusuri
+G. LOG KEJADIAN          rekap tiap layanan: server, mulai, selesai, durasi
+```
+
+Kenapa ini berguna: bagian **G** berisi data mentah yang bisa dihitung ulang
+dengan kalkulator biasa, sehingga hasil aplikasi bisa **dipertanggungjawabkan**
+saat ditanya dosen. Bagian **F** membuat alur perhitungan bisa ditulis ulang
+di kertas tanpa hunting rumus.
 
 ---
 
 ## Cara Pakai
 
 1. Buka `index.html` di browser (Chrome/Edge/Firefox, desktop atau HP).
-2. Tab **Tracker** → isi **Object Location**, atur **Duration**, tentukan jumlah **Servers (s)**.
+2. Tab **Tracker** → isi **Object Location** dan **Observer Name**, atur **Date**,
+   atur **Duration**, tentukan jumlah **Servers (s)**.
 3. Tekan **START RECORDING**.
 4. Saat pengamatan:
    - Pelanggan datang → tekan **+1 TO QUEUE**.
@@ -121,6 +158,10 @@ nilai baku buku teks (λ=3, μ=2, s=2 → Lq=1.9286, Ls=3.4286, Wq=0.6429, Ws=1.
 
 Hasil: **seluruh skenario cocok** (selisih < 1e−4 pada nilai yang ditampilkan, dan
 < 1e−13 pada presisi penuh). Deteksi kondisi overload (ρ ≥ 1) juga terverifikasi.
+
+Pengujian fungsional juga menutup jalur di mana data bisa rusak: filter durasi 0
+dan tidak-finite, migrasi state versi lama, proteksi antrean kosong, dan konsistensi
+antar-format ekspor (angka pada tampilan = angka pada CSV = angka pada Excel).
 
 ---
 

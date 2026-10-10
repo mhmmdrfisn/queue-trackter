@@ -51,6 +51,19 @@
             100% { transform: translateY(0) translateX(-50%); opacity: 1; }
         }
         .toast-enter { animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Cetak hanya bagian laporan */
+        @media print {
+            nav, #setup-panel, #counter-panel, #data-empty-state,
+            #sys-modal, #sys-toast-container, header button, .no-print { display: none !important; }
+            body, main, #view-data, #view-data > div {
+                height: auto !important; overflow: visible !important; max-width: 100% !important;
+                padding: 0 !important; background: #fff !important;
+            }
+            .brutal-shadow, .brutal-shadow-lg, .brutal-shadow-sm { box-shadow: none !important; }
+            section { break-inside: avoid; page-break-inside: avoid; }
+            #data-content { display: block !important; }
+        }
     </style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden flex flex-col md:flex-row relative">
@@ -126,21 +139,29 @@
 
             <!-- SETUP PANEL -->
             <div id="setup-panel" class="flex-none grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 bg-[#fafafa] p-4 border-2 border-gray-200 rounded-sm">
-                <div class="md:col-span-4 flex flex-col">
+                <div class="md:col-span-6 setup-field flex flex-col">
                     <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Object Location</label>
-                    <input type="text" id="loc-input" value="Minimarket XYZ" class="border-2 border-gray-300 p-2.5 text-sm font-bold focus:outline-none focus:border-black rounded-sm bg-white transition-colors">
+                    <input type="text" id="loc-input" value="Minimarket XYZ" placeholder="Nama lokasi/toko" class="border-2 border-gray-300 p-2.5 text-sm font-bold focus:outline-none focus:border-black rounded-sm bg-white transition-colors">
                 </div>
-                <div class="md:col-span-4 flex flex-col">
+                <div class="md:col-span-6 setup-field flex flex-col">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Observer Name</label>
+                    <input type="text" id="op-input" value="" placeholder="Nama pengamat" class="border-2 border-gray-300 p-2.5 text-sm font-bold focus:outline-none focus:border-black rounded-sm bg-white transition-colors">
+                </div>
+                <div class="md:col-span-3 setup-field flex flex-col">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Date</label>
+                    <input type="date" id="date-input" class="border-2 border-gray-300 p-2.5 text-sm font-bold focus:outline-none focus:border-black rounded-sm bg-white transition-colors">
+                </div>
+                <div class="md:col-span-5 setup-field flex flex-col">
                     <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Duration (HH:MM:SS)</label>
                     <div class="flex border-2 border-gray-300 rounded-sm bg-white focus-within:border-black transition-colors">
-                        <input type="number" id="time-hr" value="1" min="0" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
+                        <input type="number" id="time-hr" value="1" min="0" max="99" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
                         <span class="p-2.5 text-gray-300 font-bold">:</span>
                         <input type="number" id="time-min" value="0" min="0" max="59" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
                         <span class="p-2.5 text-gray-300 font-bold">:</span>
                         <input type="number" id="time-sec" value="0" min="0" max="59" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
                     </div>
                 </div>
-                <div class="md:col-span-4 flex flex-col">
+                <div class="md:col-span-4 setup-field flex flex-col">
                     <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Servers (s)</label>
                     <div class="flex border-2 border-gray-300 rounded-sm bg-white">
                         <button onclick="changeServers(-1)" class="px-4 py-2 hover:bg-gray-100 text-lg font-bold border-r-2 border-gray-300 brutal-btn">-</button>
@@ -200,11 +221,17 @@
                         <h2 class="text-2xl font-black tracking-tight uppercase">Analytical Report</h2>
                         <p class="text-xs text-gray-500 mt-1 font-bold tracking-widest uppercase">M/M/s Model Results</p>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="exportData()" class="border-2 border-black bg-white text-black px-5 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
+                    <div class="flex gap-3 flex-wrap">
+                        <button onclick="exportExcel()" class="border-2 border-black bg-black text-white px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-white hover:text-black transition-colors brutal-btn brutal-shadow flex items-center gap-2">
+                            <i data-lucide="table" class="w-4 h-4"></i> Excel
+                        </button>
+                        <button onclick="exportData()" class="border-2 border-black bg-white text-black px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
                             <i data-lucide="download" class="w-4 h-4"></i> CSV
                         </button>
-                        <button onclick="resetData()" class="border-2 border-red-600 bg-white text-red-600 px-5 py-2 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors brutal-btn brutal-shadow">
+                        <button onclick="printReport()" class="border-2 border-black bg-white text-black px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Print
+                        </button>
+                        <button onclick="resetData()" class="border-2 border-red-600 bg-white text-red-600 px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors brutal-btn brutal-shadow">
                             Clear
                         </button>
                     </div>
@@ -240,6 +267,74 @@
                                 <div class="text-3xl font-black" id="rep-time">-</div>
                             </div>
                         </div>
+                    </section>
+
+                    <!-- Sesi Observasi -->
+                    <section>
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
+                            Sesi Observasi
+                        </h3>
+                        <div class="border-2 border-black bg-white overflow-hidden brutal-shadow">
+                            <table class="w-full text-xs font-medium">
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Lokasi</td><td class="py-2.5 px-4 font-black" id="rep-location">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Pengamat</td><td class="py-2.5 px-4 font-black" id="rep-operator">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Tanggal</td><td class="py-2.5 px-4 font-black" id="rep-date">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Waktu Mulai</td><td class="py-2.5 px-4 font-mono font-black" id="rep-starttime">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Waktu Selesai</td><td class="py-2.5 px-4 font-mono font-black" id="rep-endtime">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Durasi Aktual</td><td class="py-2.5 px-4 font-black" id="rep-duration">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Durasi Target</td><td class="py-2.5 px-4 font-black" id="rep-target">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Berhenti</td><td class="py-2.5 px-4 font-black" id="rep-stopmode">-</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Statistik Layanan -->
+                    <section>
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
+                            Statistik Durasi Pelayanan
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Rata-rata Durasi</div>
+                                <div class="text-2xl font-black" id="calc-avgdur">-</div>
+                            </div>
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Durasi</div>
+                                <div class="text-2xl font-black" id="calc-totaldur">-</div>
+                            </div>
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Waktu Serve</div>
+                                <div class="text-2xl font-black" id="calc-tothr">-</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Per Server Breakdown -->
+                    <section>
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
+                            Rincian Per Server
+                        </h3>
+                        <div class="border-2 border-black bg-white overflow-x-auto brutal-shadow">
+                            <table class="w-full text-xs font-medium">
+                                <thead class="bg-black text-white">
+                                    <tr>
+                                        <th class="py-2.5 px-3 text-left font-black uppercase tracking-wider">Server</th>
+                                        <th class="py-2.5 px-3 text-right font-black uppercase tracking-wider">Dilayani</th>
+                                        <th class="py-2.5 px-3 text-right font-black uppercase tracking-wider">Total (s)</th>
+                                        <th class="py-2.5 px-3 text-right font-black uppercase tracking-wider">Rata² (s)</th>
+                                        <th class="py-2.5 px-3 text-right font-black uppercase tracking-wider">Min (s)</th>
+                                        <th class="py-2.5 px-3 text-right font-black uppercase tracking-wider">Max (s)</th>
+                                        <th class="py-2.5 px-3 text-right font-black uppercase tracking-wider">Utilitas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rep-server-body"></tbody>
+                            </table>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-medium leading-relaxed">
+                            Utilitas per server = (total durasi pelayanan server tersebut ÷ durasi observasi) &times; 100%. Nilai di atas 85% ditandai merah karena mendekati jenuh.
+                        </p>
                     </section>
 
                     <!-- System Parameters -->
@@ -628,9 +723,12 @@
             targetSeconds: 3600,
             elapsedSeconds: 0,
             startTimestamp: null, 
-            config: { servers: 2, location: '' },
-            data: { totalArrivals: 0, activeQueue: 0, serviceLogs: [], serverStates: [] },
-            hasData: false 
+            config: { servers: 2, location: '', operator: '' },
+            // arrivalLog: timestamp (ms) tiap pelanggan datang
+            // serviceLogs: { server, start, end, dur } tiap layanan selesai
+            data: { totalArrivals: 0, activeQueue: 0, arrivalLog: [], serviceLogs: [], serverStates: [] },
+            hasData: false,
+            lastSession: null
         };
         let timerInterval = null;
 
@@ -650,6 +748,10 @@
 
                 document.getElementById('loc-input').value = APP.config.location;
                 document.getElementById('server-input').value = APP.config.servers;
+                if (document.getElementById('op-input')) document.getElementById('op-input').value = APP.config.operator || '';
+                if (document.getElementById('date-input') && !APP.config.date) {
+                    document.getElementById('date-input').value = new Date().toISOString().slice(0, 10);
+                }
 
                 if (APP.isRecording) {
                     // Sisa waktu dihitung dari timestamp agar tetap akurat
@@ -677,8 +779,14 @@
             APP.data ||= {};
             APP.data.totalArrivals = Math.max(0, parseInt(APP.data.totalArrivals) || 0);
             APP.data.activeQueue = Math.max(0, parseInt(APP.data.activeQueue) || 0);
+            APP.data.arrivalLog = Array.isArray(APP.data.arrivalLog)
+                ? APP.data.arrivalLog.filter(t => typeof t === 'number' && isFinite(t))
+                : [];
+            // Log bisa berupa angka (versi lama) atau objek {server,start,end,dur}.
             APP.data.serviceLogs = Array.isArray(APP.data.serviceLogs)
-                ? APP.data.serviceLogs.filter(d => typeof d === 'number' && isFinite(d) && d > 0)
+                ? APP.data.serviceLogs
+                    .map(l => (typeof l === 'number' ? { server: null, start: null, end: null, dur: l } : l))
+                    .filter(l => l && typeof l.dur === 'number' && isFinite(l.dur) && l.dur > 0)
                 : [];
 
             if (!Array.isArray(APP.data.serverStates)) APP.data.serverStates = [];
@@ -698,6 +806,14 @@
 
             APP.elapsedSeconds = Math.max(0, parseInt(APP.elapsedSeconds) || 0);
             APP.targetSeconds = Math.max(0, parseInt(APP.targetSeconds) || 0);
+            APP.lastSession = (APP.lastSession && Array.isArray(APP.lastSession.serviceLogs))
+                ? Object.assign({}, APP.lastSession, {
+                    arrivalLog: Array.isArray(APP.lastSession.arrivalLog) ? APP.lastSession.arrivalLog : [],
+                    serviceLogs: APP.lastSession.serviceLogs.map(l => (typeof l === 'number'
+                        ? { server: null, start: null, end: null, dur: l } : l))
+                        .filter(l => l && typeof l.dur === 'number' && isFinite(l.dur) && l.dur > 0)
+                })
+                : null;
         }
 
         function switchView(viewId) {
@@ -774,7 +890,12 @@
                 APP.startTimestamp = Date.now(); 
                 APP.data.totalArrivals = 0;
                 APP.data.activeQueue = 0;
+                APP.data.arrivalLog = [];
                 APP.data.serviceLogs = [];
+                APP.data.serverStates = [];
+                APP.config.location = document.getElementById('loc-input').value.trim();
+                APP.config.operator = document.getElementById('op-input')?.value.trim() || '';
+                APP.startTimestamp = Date.now();
                 
                 buildServerGrid();
                 resumeRecordingUI();
@@ -799,7 +920,6 @@
             const counterPanel = document.getElementById('counter-panel');
 
             // Set UI to Recording Mode
-            setupPanel.classList.add('hidden');
             counterPanel.classList.remove('hidden');
             counterPanel.classList.add('flex');
             document.getElementById('status-indicator').classList.remove('hidden');
@@ -808,8 +928,8 @@
             btn.innerText = "STOP RECORDING";
             btn.classList.replace('bg-black', 'bg-red-600');
             btn.classList.replace('hover:bg-gray-800', 'hover:bg-red-700');
-            setupPanel.classList.remove('hidden'); 
-            Array.from(setupPanel.children).forEach((child, index) => { if(index < 3) child.classList.add('hidden'); });
+            // Sembunyikan seluruh field setup, sisakan tombol toggle.
+            setupPanel.querySelectorAll('.setup-field').forEach(f => f.classList.add('hidden'));
 
             // Restore Grid if refreshing
             if (document.getElementById('server-grid').children.length === 0) {
@@ -857,16 +977,37 @@
             releaseWakeLock();
             
             // Layanan yang masih berjalan saat observasi berakhir otomatis diabaikan:
-            // durasinya terpotong sehingga akan membuat μ terlalu besar (tidak valid).
+            // durasinya terpotong sehingga membuat nilai mu terlalu besar.
             APP.data.serverStates.forEach(srv => {
                 if (srv.startTs !== null) {
                     if (!isAutoStop) {
-                        const duration = (Date.now() - srv.startTs) / 1000;
-                        if (duration > 0) APP.data.serviceLogs.push(duration);
+                        const end = Date.now();
+                        const duration = (end - srv.startTs) / 1000;
+                        if (duration > 0) {
+                            APP.data.serviceLogs.push({
+                                server: srv.id, start: srv.startTs, end, dur: duration
+                            });
+                        }
                     }
                     srv.startTs = null;
                 }
             });
+
+            // Simpan ringkasan sesi agar laporan tetap terbaca setelah recording baru dimulai.
+            APP.lastSession = {
+                location: APP.config.location,
+                operator: APP.config.operator,
+                date: document.getElementById('date-input')?.value || '',
+                startTimestamp: APP.startTimestamp,
+                elapsedSeconds: APP.elapsedSeconds,
+                targetSeconds: APP.targetSeconds,
+                servers: APP.config.servers,
+                totalArrivals: APP.data.totalArrivals,
+                arrivalLog: APP.data.arrivalLog.slice(),
+                serviceLogs: APP.data.serviceLogs.slice(),
+                finishedAt: Date.now(),
+                autoStopped: !!isAutoStop
+            };
             
             const btn = document.getElementById('btn-toggle');
             const setupPanel = document.getElementById('setup-panel');
@@ -901,6 +1042,7 @@
             if (!APP.isRecording) return;
             APP.data.totalArrivals++;
             APP.data.activeQueue++;
+            APP.data.arrivalLog.push(Date.now());
             updateTrackerUI();
             saveState();
             
@@ -932,12 +1074,14 @@
             } else {
                 // Durasi diukur dari timestamp milidetik, bukan tick timer 1 detik,
                 // agar presisi μ tetap akurat pada layanan yang singkat.
-                const duration = (Date.now() - srv.startTs) / 1000;
+                const end = Date.now();
+                const duration = (end - srv.startTs) / 1000;
+                const startedAt = srv.startTs;
                 srv.startTs = null;
 
                 // Abaikan durasi 0 (tidak sengaja) agar rata-rata μ tidak terdistorsi.
                 if (duration > 0) {
-                    APP.data.serviceLogs.push(duration);
+                    APP.data.serviceLogs.push({ server: id, start: startedAt, end, dur: duration });
                 }
                 
                 btn.classList.replace('bg-black', 'bg-white');
@@ -970,8 +1114,10 @@
                     APP.isRecording = false;
                     APP.elapsedSeconds = 0;
                     APP.startTimestamp = null;
+                    APP.lastSession = null;
                     APP.data.totalArrivals = 0;
                     APP.data.activeQueue = 0;
+                    APP.data.arrivalLog = [];
                     APP.data.serviceLogs = [];
                     APP.data.serverStates = [];
                     localStorage.removeItem('qt_state_v1');
@@ -980,6 +1126,26 @@
                 }
             );
         }
+
+        // Durasi setiap layanan dalam detik, dari log yang diberikan.
+        const serviceDurations = (logs) => (Array.isArray(logs) ? logs : [])
+            .map(log => (typeof log === 'object' ? log.dur : log))
+            .filter(d => typeof d === 'number' && isFinite(d) && d > 0);
+
+        // Sesi yang sedang ditampilkan: prefer lastSession agar laporan tetap utuh
+        // walaupun recording baru sudah dimulai.
+        const activeSession = () => APP.lastSession || {
+            location: APP.config.location,
+            operator: APP.config.operator,
+            date: document.getElementById('date-input')?.value || '',
+            startTimestamp: APP.startTimestamp,
+            elapsedSeconds: APP.elapsedSeconds,
+            targetSeconds: APP.targetSeconds,
+            servers: APP.config.servers,
+            totalArrivals: APP.data.totalArrivals,
+            arrivalLog: APP.data.arrivalLog,
+            serviceLogs: APP.data.serviceLogs
+        };
 
         function renderDataAnalysis() {
             const emptyState = document.getElementById('data-empty-state');
@@ -994,15 +1160,20 @@
             emptyState.classList.add('hidden');
             contentState.classList.remove('hidden');
 
-            const totalArr = APP.data.totalArrivals;
-            const totalSrv = APP.data.serviceLogs.length;
-            const s = APP.config.servers;
-            const timeHours = APP.elapsedSeconds / 3600;
+            const ses = activeSession();
+            const durs = serviceDurations(ses.serviceLogs);
+            const totalArr = ses.totalArrivals;
+            const totalSrv = durs.length;
+            const s = ses.servers;
+            const timeHours = ses.elapsedSeconds / 3600;
 
             document.getElementById('rep-arrivals').innerText = totalArr;
             document.getElementById('rep-served').innerText = totalSrv;
             document.getElementById('rep-s').innerText = s;
             document.getElementById('rep-time').innerText = `${timeHours.toFixed(2)} hr`;
+
+            renderSessionHeader(ses);
+            renderServerBreakdown(ses, durs);
 
             // Durasi 0 membuat λ tak terhingga; data observasi belum valid.
             if (timeHours <= 0) {
@@ -1013,18 +1184,68 @@
             }
 
             const lambda = totalArr / timeHours; 
-            
-            let mu = 0; 
-            if (totalSrv > 0) {
-                const totalDurSecs = APP.data.serviceLogs.reduce((a,b) => a+b, 0);
-                const avgDurSecs = totalDurSecs / totalSrv;
-                mu = avgDurSecs > 0 ? 3600 / avgDurSecs : 0;
-            }
+            const totalDurSecs = durs.reduce((a, b) => a + b, 0);
+            const avgDurSecs = totalSrv > 0 ? totalDurSecs / totalSrv : 0;
+            const mu = avgDurSecs > 0 ? 3600 / avgDurSecs : 0;
 
             document.getElementById('rep-lambda').innerText = lambda.toFixed(2);
             document.getElementById('rep-mu').innerText = mu.toFixed(2);
+            document.getElementById('calc-avgdur').innerText = avgDurSecs.toFixed(2) + " s";
+            document.getElementById('calc-totaldur').innerText = totalDurSecs.toFixed(0) + " s";
+            document.getElementById('calc-tothr').innerText = (totalDurSecs / 3600).toFixed(3) + " hr";
 
             calculateMMS(lambda, mu, s);
+        }
+
+        function fmtClock(ts) {
+            if (!ts) return "-";
+            const d = new Date(ts);
+            return String(d.getHours()).padStart(2, '0') + ':'
+                 + String(d.getMinutes()).padStart(2, '0') + ':'
+                 + String(d.getSeconds()).padStart(2, '0');
+        }
+
+        function renderSessionHeader(ses) {
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            set('rep-location', ses.location || '-');
+            set('rep-operator', ses.operator || '-');
+            set('rep-date', ses.date || (ses.startTimestamp ? new Date(ses.startTimestamp).toLocaleDateString('id-ID') : '-'));
+            set('rep-starttime', fmtClock(ses.startTimestamp));
+            set('rep-endtime', fmtClock(ses.finishedAt || (ses.startTimestamp ? ses.startTimestamp + ses.elapsedSeconds * 1000 : null)));
+            set('rep-duration', `${ses.elapsedSeconds} s (${(ses.elapsedSeconds / 60).toFixed(1)} menit)`);
+            set('rep-target', `${ses.targetSeconds} s`);
+            set('rep-stopmode', ses.autoStopped ? 'Otomatis (waktu habis)' : 'Manual');
+        }
+
+        function renderServerBreakdown(ses, durs) {
+            const rows = [];
+            for (let i = 1; i <= ses.servers; i++) {
+                const logs = ses.serviceLogs.filter(l => (typeof l === 'object' ? l.server : null) === i);
+                const ds = logs.map(l => (typeof l === 'object' ? l.dur : l)).filter(d => d > 0);
+                const total = ds.reduce((a, b) => a + b, 0);
+                rows.push({
+                    id: i,
+                    served: ds.length,
+                    total,
+                    avg: ds.length ? total / ds.length : 0,
+                    min: ds.length ? Math.min(...ds) : 0,
+                    max: ds.length ? Math.max(...ds) : 0,
+                    util: ses.elapsedSeconds > 0 ? total / ses.elapsedSeconds : 0
+                });
+            }
+
+            const body = document.getElementById('rep-server-body');
+            if (!body) return;
+            body.innerHTML = rows.map(r => `
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td class="py-2 px-3 font-black">Server ${r.id}</td>
+                    <td class="py-2 px-3 text-right">${r.served}</td>
+                    <td class="py-2 px-3 text-right">${r.total.toFixed(1)}</td>
+                    <td class="py-2 px-3 text-right">${r.avg.toFixed(1)}</td>
+                    <td class="py-2 px-3 text-right">${r.min.toFixed(1)}</td>
+                    <td class="py-2 px-3 text-right">${r.max.toFixed(1)}</td>
+                    <td class="py-2 px-3 text-right font-black ${r.util > 0.85 ? 'text-red-600' : ''}">${(r.util * 100).toFixed(1)}%</td>
+                </tr>`).join('');
         }
 
         function factorial(n) {
@@ -1137,39 +1358,304 @@
             ['calc-wq-min','calc-ws-min'].forEach(id => document.getElementById(id).innerText = "");
         }
 
-        // === 7. EXPORT CSV ===
-        function exportData() {
-            if (!APP.hasData) { UI.showToast("Tidak ada data untuk diekspor", "error"); return; }
-            
-            // Escape koma, tanda kutip, dan baris baru agar nilai tidak merusak struktur CSV.
-            const csvCell = (val) => `"${String(val).replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
-            const timeHours = APP.elapsedSeconds / 3600;
-            const totalSrv = APP.data.serviceLogs.length;
-            const lambda = timeHours > 0 ? APP.data.totalArrivals / timeHours : 0;
-            const totalDurSecs = APP.data.serviceLogs.reduce((a,b) => a+b, 0);
-            const mu = totalSrv > 0 && totalDurSecs > 0 ? 3600 / (totalDurSecs / totalSrv) : 0;
+        // === 7. LAPORAN & EKSPOR ===
+        // Satu sumber kebenaran untuk CSV, Excel, dan Print.
+        function buildReport() {
+            const ses = activeSession();
+            const durs = serviceDurations(ses.serviceLogs);
+            const timeHours = ses.elapsedSeconds / 3600;
+            const totalDur = durs.reduce((a, b) => a + b, 0);
+            const avgDur = durs.length ? totalDur / durs.length : 0;
+            const s = ses.servers;
 
-            let csv = "Metrics,Value\n";
-            csv += `Location,${csvCell(APP.config.location)}\n`;
-            csv += `Total Arrivals,${APP.data.totalArrivals}\n`;
-            csv += `Total Served,${totalSrv}\n`;
-            csv += `Total Duration (s),${APP.elapsedSeconds}\n`;
-            csv += `Observation Time (hr),${timeHours.toFixed(4)}\n`;
-            csv += `Number of Servers (s),${APP.config.servers}\n`;
-            csv += `Arrival Rate (lambda/hr),${lambda.toFixed(4)}\n`;
-            csv += `Service Rate (mu/hr/server),${mu.toFixed(4)}\n\n`;
-            csv += "=== Service Logs (Duration in Seconds) ===\n";
-            
-            APP.data.serviceLogs.forEach((dur, i) => { csv += `Service ${i+1},${dur.toFixed(3)}\n`; });
+            const lambda = timeHours > 0 ? ses.totalArrivals / timeHours : 0;
+            const mu = avgDur > 0 ? 3600 / avgDur : 0;
+            const rho = s > 0 && mu > 0 ? lambda / (s * mu) : 0;
+            const stable = mu > 0 && rho < 1;
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = window.URL.createObjectURL(blob);
+            let mms = null;
+            if (lambda > 0 && mu > 0 && stable) {
+                const a = lambda / mu;
+                let sumTerm = 0;
+                for (let n = 0; n < s; n++) sumTerm += Math.pow(a, n) / factorial(n);
+                const tail = (Math.pow(a, s) / factorial(s)) * (1 / (1 - rho));
+                const Po = 1 / (sumTerm + tail);
+                const Lq = (Po * Math.pow(a, s) * rho) / (factorial(s) * Math.pow(1 - rho, 2));
+                const Ls = Lq + a;
+                const Wq = Lq / lambda;
+                const Ws = Wq + 1 / mu;
+                mms = { Po, Lq, Ls, Wq, Ws };
+            }
+
+            const perServer = [];
+            for (let i = 1; i <= s; i++) {
+                const ds = ses.serviceLogs
+                    .filter(l => (typeof l === 'object' ? l.server : null) === i)
+                    .map(l => (typeof l === 'object' ? l.dur : l))
+                    .filter(d => d > 0);
+                const total = ds.reduce((a, b) => a + b, 0);
+                perServer.push({
+                    id: i, count: ds.length, total,
+                    avg: ds.length ? total / ds.length : 0,
+                    min: ds.length ? Math.min(...ds) : 0,
+                    max: ds.length ? Math.max(...ds) : 0,
+                    util: ses.elapsedSeconds > 0 ? total / ses.elapsedSeconds : 0
+                });
+            }
+
+            const arrivals = (ses.arrivalLog || []).slice().sort((x, y) => x - y);
+            const interArr = arrivals.slice(1).map((t, i) => (t - arrivals[i]) / 1000);
+
+            return {
+                ses, durs, perServer, arrivals, interArr,
+                timeHours, totalDur, avgDur, lambda, mu, rho, stable, mms, s,
+                totalArr: ses.totalArrivals,
+                totalSrv: durs.length,
+                capacity: s * mu,
+                capacityGap: s * mu - lambda,
+                servedRatio: ses.totalArrivals > 0 ? durs.length / ses.totalArrivals : 0,
+                meanInter: interArr.length ? interArr.reduce((a, b) => a + b, 0) / interArr.length : 0
+            };
+        }
+
+        function reportStamp() {
+            const d = new Date();
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+        }
+
+        function reportTitle(r) {
+            const loc = (r.ses.location || 'lokasi').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_') || 'lokasi';
+            return `Laporan_Antrean_${loc}_${reportStamp()}`;
+        }
+
+        function downloadFile(content, filename, mime) {
+            const blob = new Blob(['﻿', content], { type: mime });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Queue_Report_${new Date().getTime()}.csv`;
+            a.download = filename;
+            document.body.appendChild(a);
             a.click();
-            window.URL.revokeObjectURL(url);
-            UI.showToast("Dokumen CSV Berhasil Diunduh", "success");
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        // --- CSV ---
+        function exportData() {
+            if (!APP.hasData) { UI.showToast("Tidak ada data untuk diekspor", "error"); return; }
+            const r = buildReport();
+            const q = v => `"${String(v).replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+            const n = (v, d = 4) => (isFinite(v) ? Number(v).toFixed(d) : '-');
+            const rows = [];
+
+            rows.push(['LAPORAN OBSERVASI ANTREAN - MODEL M/M/s']);
+            rows.push([]);
+            rows.push(['A. IDENTITAS OBSERVASI']);
+            rows.push(['Lokasi', q(r.ses.location || '-')]);
+            rows.push(['Pengamat', q(r.ses.operator || '-')]);
+            rows.push(['Tanggal', r.ses.date || '-']);
+            rows.push(['Waktu Mulai', fmtClock(r.ses.startTimestamp)]);
+            rows.push(['Waktu Selesai', fmtClock(r.ses.finishedAt || (r.ses.startTimestamp ? r.ses.startTimestamp + r.ses.elapsedSeconds * 1000 : null))]);
+            rows.push(['Durasi Target (s)', r.ses.targetSeconds]);
+            rows.push(['Durasi Aktual (s)', r.ses.elapsedSeconds]);
+            rows.push(['Jumlah Server (s)', r.ses.servers]);
+            rows.push(['Berhenti', r.ses.autoStopped ? 'Otomatis (waktu habis)' : 'Manual']);
+            rows.push([]);
+
+            rows.push(['B. DATA OBSERVASI']);
+            rows.push(['Total Kedatangan', r.totalArr]);
+            rows.push(['Total Dilayani', r.totalSrv]);
+            rows.push(['Belum Dilayani', r.totalArr - r.totalSrv]);
+            rows.push(['Rasio Pelayanan', n(r.servedRatio * 100, 1) + '%']);
+            rows.push(['Total Durasi Pelayanan (s)', n(r.totalDur, 1)]);
+            rows.push(['Rata-rata Durasi (s)', n(r.avgDur, 2)]);
+            rows.push(['Rata-rata Jarak Kedatangan (s)', n(r.meanInter, 2)]);
+            rows.push([]);
+
+            rows.push(['C. RINCIAN PER SERVER']);
+            rows.push(['Server', 'Jumlah Dilayani', 'Total (s)', 'Rata-rata (s)', 'Min (s)', 'Max (s)', 'Utilitas (%)']);
+            r.perServer.forEach(p => rows.push([
+                'Server ' + p.id, p.count, n(p.total, 1), n(p.avg, 2),
+                n(p.min, 1), n(p.max, 1), n(p.util * 100, 1)
+            ]));
+            rows.push([]);
+
+            rows.push(['D. PARAMETER SISTEM']);
+            rows.push(['Laju Kedatangan (lambda)', n(r.lambda), 'orang/jam']);
+            rows.push(['Laju Pelayanan (mu)', n(r.mu), 'orang/jam/server']);
+            rows.push(['Utilitas / Beban (rho)', n(r.rho), '']);
+            rows.push(['Kapasitas-total (s x mu)', n(r.capacity), 'orang/jam']);
+            rows.push(['Selisih kapasitas', n(r.capacityGap), 'orang/jam']);
+            rows.push(['Kapasitas dipakai (s x mu x rho)', n(r.s * r.mu * r.rho), 'orang/jam']);
+            rows.push([]);
+
+            rows.push(['E. HASIL PERHITUNGAN M/M/s']);
+            if (!r.stable) {
+                rows.push(['Status', 'Sistem TIDAK STABIL (rho >= 1)']);
+                rows.push(['Keterangan', 'Antrean akan tumbuh tanpa batas; rumus M/M/s tidak berlaku.']);
+            } else {
+                rows.push(['Probabilitas Sistem Kosong (P0)', n(r.mms.Po), '']);
+                rows.push(['Rata-rata Antrean (Lq)', n(r.mms.Lq), 'orang']);
+                rows.push(['Rata-rata Sistem (Ls)', n(r.mms.Ls), 'orang']);
+                rows.push(['Rata-rata Waktu Antre (Wq)', n(r.mms.Wq), 'jam']);
+                rows.push(['Rata-rata Waktu Antre (Wq)', n(r.mms.Wq * 60), 'menit']);
+                rows.push(['Rata-rata Waktu Sistem (Ws)', n(r.mms.Ws), 'jam']);
+                rows.push(['Rata-rata Waktu Sistem (Ws)', n(r.mms.Ws * 60), 'menit']);
+            }
+            rows.push([]);
+
+            rows.push(['F. RUMUS YANG DIGUNAKAN']);
+            rows.push(['lambda = Total Kedatangan / Waktu Observasi (jam)']);
+            rows.push(['mu = 3600 / Rata-rata Durasi Pelayanan (detik)']);
+            rows.push(['rho = lambda / (s x mu)']);
+            rows.push(['P0 = 1 / [ SUM(n=0..s-1) (lambda/mu)^n / n! + (lambda/mu)^s / (s! x (1-rho)) ]']);
+            rows.push(['Lq = P0 x (lambda/mu)^s x rho / [ s! x (1-rho)^2 ]']);
+            rows.push(['Ls = Lq + lambda/mu']);
+            rows.push(['Wq = Lq / lambda']);
+            rows.push(['Ws = Wq + 1/mu']);
+            rows.push([]);
+
+            rows.push(['G. LOG KEJADIAN (timestamp relatif dalam detik)']);
+            rows.push(['No', 'Waktu (s)', 'Server', 'Mulai (s)', 'Selesai (s)', 'Durasi (s)']);
+            const base = r.ses.startTimestamp || 0;
+            r.ses.serviceLogs.forEach((l, i) => {
+                const isObj = typeof l === 'object';
+                const st = isObj ? l.start : null, en = isObj ? l.end : null;
+                const dur = isObj ? l.dur : l;
+                rows.push([
+                    i + 1,
+                    st ? n((st - base) / 1000, 1) : '-',
+                    isObj ? 'Server ' + l.server : '-',
+                    st ? n((st - base) / 1000, 1) : '-',
+                    en ? n((en - base) / 1000, 1) : '-',
+                    n(dur, 2)
+                ]);
+            });
+
+            const csv = rows.map(row => row.map(q).join(',')).join('\r\n');
+            downloadFile(csv, `${reportTitle(r)}.csv`, 'text/csv;charset=utf-8;');
+            UI.showToast("Laporan CSV berhasil diunduh", "success");
+        }
+
+        // --- Excel ( SpreadsheetML, tanpa dependensi eksternal ) ---
+        function exportExcel() {
+            if (!APP.hasData) { UI.showToast("Tidak ada data untuk diekspor", "error"); return; }
+            const r = buildReport();
+            const esc = v => String(v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+            const n = (v, d = 4) => (isFinite(v) ? Number(v).toFixed(d) : '-');
+
+            const cell = (v, style) => `<Cell${style ? ` ss:StyleID="${style}"` : ''}><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+            const num = (v, d = 4, style) => `<Cell${style ? ` ss:StyleID="${style}"` : ''}><Data ss:Type="Number">${isFinite(v) ? Number(v).toFixed(d) : ''}</Data></Cell>`;
+            const row = cells => `<Row>${cells.map(c => c).join('')}</Row>`;
+            const sheet = (name, rows) =>
+                `<Worksheet ss:Name="${esc(name).slice(0, 31)}"><Table>${rows.join('')}</Table></Worksheet>`;
+
+            // Sheet 1: Ringkasan + parameter
+            const s1 = [
+                row([cell('LAPORAN OBSERVASI ANTREAN - MODEL M/M/s', 'title')]),
+                row([cell('Bagian', 'hdr'), cell('Nilai', 'hdr'), cell('Satuan', 'hdr')]),
+                row([cell('Lokasi'), cell(r.ses.location || '-'), cell('')]),
+                row([cell('Pengamat'), cell(r.ses.operator || '-'), cell('')]),
+                row([cell('Tanggal'), cell(r.ses.date || '-'), cell('')]),
+                row([cell('Waktu Mulai'), cell(fmtClock(r.ses.startTimestamp)), cell('')]),
+                row([cell('Waktu Selesai'), cell(fmtClock(r.ses.finishedAt || (r.ses.startTimestamp ? r.ses.startTimestamp + r.ses.elapsedSeconds * 1000 : null))), cell('')]),
+                row([cell('Durasi Target'), num(r.ses.targetSeconds, 0), cell('detik')]),
+                row([cell('Durasi Aktual'), num(r.ses.elapsedSeconds, 0), cell('detik')]),
+                row([cell('Jumlah Server (s)'), num(r.ses.servers, 0), cell('server')]),
+                row([cell('Total Kedatangan'), num(r.totalArr, 0), cell('orang')]),
+                row([cell('Total Dilayani'), num(r.totalSrv, 0), cell('orang')]),
+                row([cell('Belum Dilayani'), num(r.totalArr - r.totalSrv, 0), cell('orang')]),
+                row([cell('Rata-rata Durasi Pelayanan'), num(r.avgDur, 2), cell('detik')]),
+                row([cell('Rata-rata Jarak Kedatangan'), num(r.meanInter, 2), cell('detik')]),
+                row([cell('lambda (Kedatangan)'), num(r.lambda, 4), cell('orang/jam')]),
+                row([cell('mu (Pelayanan)'), num(r.mu, 4), cell('orang/jam/server')]),
+                row([cell('rho (Utilitas)'), num(r.rho, 4), cell('')]),
+                row([cell('Kapasitas-total (s x mu)'), num(r.capacity, 4), cell('orang/jam')]),
+                row([cell('Selisih Kapasitas'), num(r.capacityGap, 4), cell('orang/jam')])
+            ];
+
+            // Sheet 2: Hasil M/M/s
+            const s2 = [
+                row([cell('HASIL PERHITUNGAN M/M/s', 'title')]),
+                row([cell('Besaran', 'hdr'), cell('Rumus', 'hdr'), cell('Nilai', 'hdr'), cell('Satuan', 'hdr')])
+            ];
+            if (!r.stable) {
+                s2.push(row([cell('Status', 'warn'), cell('rho >= 1'), cell('TIDAK STABIL', 'warn'), cell('-')]));
+                s2.push(row([cell('Keterangan'), cell('-'), cell('Antrean tumbuh tanpa batas; rumus tidak berlaku.'), cell('-')]));
+            } else {
+                s2.push(row([cell('P0'), cell('1 / [SUM... + ...]'), num(r.mms.Po, 6), cell('probabilitas')]));
+                s2.push(row([cell('Lq'), cell('P0 x (lambda/mu)^s x rho / [s! x (1-rho)^2]'), num(r.mms.Lq, 6), cell('orang')]));
+                s2.push(row([cell('Ls'), cell('Lq + lambda/mu'), num(r.mms.Ls, 6), cell('orang')]));
+                s2.push(row([cell('Wq'), cell('Lq / lambda'), num(r.mms.Wq, 6), cell('jam')]));
+                s2.push(row([cell('Wq'), cell('Lq / lambda'), num(r.mms.Wq * 60, 4), cell('menit')]));
+                s2.push(row([cell('Ws'), cell('Wq + 1/mu'), num(r.mms.Ws, 6), cell('jam')]));
+                s2.push(row([cell('Ws'), cell('Wq + 1/mu'), num(r.mms.Ws * 60, 4), cell('menit')]));
+            }
+
+            // Sheet 3: Rincian per server
+            const s3 = [
+                row([cell('RINCIAN PER SERVER', 'title')]),
+                row(['Server', 'Jumlah Dilayani', 'Total (s)', 'Rata-rata (s)', 'Min (s)', 'Max (s)', 'Utilitas (%)'].map(h => cell(h, 'hdr')))
+            ];
+            r.perServer.forEach(p => s3.push(row([
+                cell('Server ' + p.id), num(p.count, 0), num(p.total, 1),
+                num(p.avg, 2), num(p.min, 1), num(p.max, 1), num(p.util * 100, 1)
+            ])));
+
+            // Sheet 4: Log mentah
+            const s4 = [
+                row([cell('LOG KEJADIAN', 'title')]),
+                row(['No', 'Server', 'Mulai (s)', 'Selesai (s)', 'Durasi (s)'].map(h => cell(h, 'hdr')))
+            ];
+            const base = r.ses.startTimestamp || 0;
+            r.ses.serviceLogs.forEach((l, i) => {
+                const isObj = typeof l === 'object';
+                s4.push(row([
+                    num(i + 1, 0),
+                    cell(isObj ? 'Server ' + l.server : '-'),
+                    num(isObj ? (l.start - base) / 1000 : NaN, 1),
+                    num(isObj ? (l.end - base) / 1000 : NaN, 1),
+                    num(isObj ? l.dur : l, 2)
+                ]));
+            });
+
+            // Sheet 5: Log kedatangan
+            const s5 = [
+                row([cell('LOG KEDATANGAN', 'title')]),
+                row(['No', 'Waktu (s)'].map(h => cell(h, 'hdr')))
+            ];
+            r.arrivals.forEach((t, i) => {
+                s5.push(row([num(i + 1, 0), num((t - base) / 1000, 1)]));
+            });
+
+            const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Top"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>
+  <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14"/></Style>
+  <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#000000" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="warn"><Font ss:Bold="1" ss:Color="#CC0000"/></Style>
+ </Styles>
+ ${sheet('Ringkasan', s1)}
+ ${sheet('Hasil M-M-s', s2)}
+ ${sheet('Per Server', s3)}
+ ${sheet('Log Layanan', s4)}
+ ${sheet('Log Kedatangan', s5)}
+</Workbook>`;
+
+            downloadFile(xml, `${reportTitle(r)}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
+            UI.showToast("Laporan Excel berhasil diunduh", "success");
+        }
+
+        // --- Print ---
+        function printReport() {
+            if (!APP.hasData) { UI.showToast("Tidak ada data untuk dicetak", "error"); return; }
+            window.print();
         }
 
     </script>
