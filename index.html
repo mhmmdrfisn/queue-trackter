@@ -258,14 +258,14 @@
                         <div class="border-2 border-black bg-white overflow-hidden brutal-shadow">
                             <table class="w-full text-xs font-medium">
                                 <tbody class="divide-y divide-gray-200">
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Lokasi</td><td class="py-2.5 px-4 font-black" id="rep-location">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Pengamat</td><td class="py-2.5 px-4 font-black" id="rep-operator">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Tanggal</td><td class="py-2.5 px-4 font-black" id="rep-date">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Waktu Mulai</td><td class="py-2.5 px-4 font-mono font-black" id="rep-starttime">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Waktu Selesai</td><td class="py-2.5 px-4 font-mono font-black" id="rep-endtime">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Durasi Aktual</td><td class="py-2.5 px-4 font-black" id="rep-duration">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Durasi Target</td><td class="py-2.5 px-4 font-black" id="rep-target">-</td></tr>
-                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600">Berhenti</td><td class="py-2.5 px-4 font-black" id="rep-stopmode">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3 align-top">Lokasi</td><td class="py-2.5 px-4 font-black break-words" id="rep-location">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3 align-top">Pengamat</td><td class="py-2.5 px-4 font-black break-words" id="rep-operator">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Tanggal</td><td class="py-2.5 px-4 font-black" id="rep-date">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Waktu Mulai</td><td class="py-2.5 px-4 font-mono font-black" id="rep-starttime">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Waktu Selesai</td><td class="py-2.5 px-4 font-mono font-black" id="rep-endtime">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Durasi Aktual</td><td class="py-2.5 px-4 font-black" id="rep-duration">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Durasi Target</td><td class="py-2.5 px-4 font-black" id="rep-target">-</td></tr>
+                                    <tr><td class="py-2.5 px-4 bg-gray-50 font-bold uppercase tracking-wider text-gray-600 w-1/3">Berhenti</td><td class="py-2.5 px-4 font-black" id="rep-stopmode">-</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -297,7 +297,12 @@
                         <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
                             Rincian Per Server
                         </h3>
-                        <div class="border-2 border-black bg-white overflow-x-auto brutal-shadow">
+
+                        <!-- Mobile: kartu agar tidak perlu scroll horizontal -->
+                        <div id="rep-server-cards" class="md:hidden flex flex-col gap-3"></div>
+
+                        <!-- Desktop: tabel -->
+                        <div class="hidden md:block border-2 border-black bg-white overflow-x-auto brutal-shadow">
                             <table class="w-full text-xs font-medium">
                                 <thead class="bg-black text-white">
                                     <tr>
@@ -313,6 +318,7 @@
                                 <tbody id="rep-server-body"></tbody>
                             </table>
                         </div>
+
                         <p class="text-[10px] text-gray-500 mt-2 font-medium leading-relaxed">
                             Utilitas per server = (total durasi pelayanan server tersebut ÷ durasi observasi) &times; 100%. Nilai di atas 85% ditandai merah karena mendekati jenuh.
                         </p>
@@ -1215,18 +1221,49 @@
                 });
             }
 
+            // Tabel (desktop) dan kartu (mobile) memakai angka yang sama.
             const body = document.getElementById('rep-server-body');
-            if (!body) return;
-            body.innerHTML = rows.map(r => `
-                <tr class="border-b border-gray-200 hover:bg-gray-50">
-                    <td class="py-2 px-3 font-black">Server ${r.id}</td>
-                    <td class="py-2 px-3 text-right">${r.served}</td>
-                    <td class="py-2 px-3 text-right">${r.total.toFixed(1)}</td>
-                    <td class="py-2 px-3 text-right">${r.avg.toFixed(1)}</td>
-                    <td class="py-2 px-3 text-right">${r.min.toFixed(1)}</td>
-                    <td class="py-2 px-3 text-right">${r.max.toFixed(1)}</td>
-                    <td class="py-2 px-3 text-right font-black ${r.util > 0.85 ? 'text-red-600' : ''}">${(r.util * 100).toFixed(1)}%</td>
-                </tr>`).join('');
+            if (body) {
+                body.innerHTML = rows.map(r => `
+                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        <td class="py-2 px-3 font-black">Server ${r.id}</td>
+                        <td class="py-2 px-3 text-right">${r.served}</td>
+                        <td class="py-2 px-3 text-right">${r.total.toFixed(1)}</td>
+                        <td class="py-2 px-3 text-right">${r.avg.toFixed(1)}</td>
+                        <td class="py-2 px-3 text-right">${r.min.toFixed(1)}</td>
+                        <td class="py-2 px-3 text-right">${r.max.toFixed(1)}</td>
+                        <td class="py-2 px-3 text-right font-black ${r.util > 0.85 ? 'text-red-600' : ''}">${(r.util * 100).toFixed(1)}%</td>
+                    </tr>`).join('');
+            }
+
+            const cards = document.getElementById('rep-server-cards');
+            if (cards) {
+                cards.innerHTML = rows.map(r => `
+                    <div class="border-2 border-black bg-white brutal-shadow">
+                        <div class="flex items-center justify-between bg-black text-white px-3 py-2">
+                            <span class="text-xs font-black uppercase tracking-wider">Server ${r.id}</span>
+                            <span class="text-xs font-black ${r.util > 0.85 ? 'text-red-400' : 'text-white'}">${(r.util * 100).toFixed(1)}%</span>
+                        </div>
+                        <dl class="grid grid-cols-2 gap-px bg-gray-200">
+                            <div class="bg-white px-3 py-2">
+                                <dt class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Dilayani</dt>
+                                <dd class="text-lg font-black">${r.served}</dd>
+                            </div>
+                            <div class="bg-white px-3 py-2">
+                                <dt class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Rata&sup2; (s)</dt>
+                                <dd class="text-lg font-black">${r.avg.toFixed(1)}</dd>
+                            </div>
+                            <div class="bg-white px-3 py-2">
+                                <dt class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Total (s)</dt>
+                                <dd class="text-lg font-black">${r.total.toFixed(1)}</dd>
+                            </div>
+                            <div class="bg-white px-3 py-2">
+                                <dt class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Min / Max (s)</dt>
+                                <dd class="text-lg font-black">${r.min.toFixed(1)} / ${r.max.toFixed(1)}</dd>
+                            </div>
+                        </dl>
+                    </div>`).join('');
+            }
         }
 
         function factorial(n) {
