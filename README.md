@@ -35,12 +35,11 @@ Fitur pendukung:
 
 Tombol di tab **Analysis** menghasilkan laporan yang siap dikumpulkan.
 Semuanya diturunkan dari satu fungsi `buildReport()`, sehingga angka pada
-tampilan, CSV, Excel, dan Print **selalu identik**.
+tampilan, Excel, dan Print **selalu identik**.
 
 | Tombol | Keluaran |
 |---|---|
 | **Excel** | `.xls` (SpreadsheetML) berisi 5 sheet: Ringkasan, Hasil M-M-s, Per Server, Log Layanan, Log Kedatangan |
-| **CSV** | Teks berformat daftar bagian (A–G), mudah ditempel ke laporan |
 | **Print** | Cetak langsung ke printer / simpan sebagai PDF dari dialog cetak |
 
 ### Isi laporan
@@ -57,10 +56,9 @@ F. RUMUS YANG DIGUNAKAN   daftar rumus sehingga angka bisa ditelusuri
 G. LOG KEJADIAN          rekap tiap layanan: server, mulai, selesai, durasi
 ```
 
-Kenapa ini berguna: bagian **G** berisi data mentah yang bisa dihitung ulang
-dengan kalkulator biasa, sehingga hasil aplikasi bisa **dipertanggungjawabkan**
-saat ditanya dosen. Bagian **F** membuat alur perhitungan bisa ditulis ulang
-di kertas tanpa hunting rumus.
+Kenapa ini berguna: sheet **Log Layanan** berisi data mentah yang bisa dihitung
+ulang dengan kalkulator biasa, sehingga hasil aplikasi bisa **dipertanggungjawabkan**
+saat ditanya dosen.
 
 ---
 
@@ -161,7 +159,7 @@ Hasil: **seluruh skenario cocok** (selisih < 1e−4 pada nilai yang ditampilkan,
 
 Pengujian fungsional juga menutup jalur di mana data bisa rusak: filter durasi 0
 dan tidak-finite, migrasi state versi lama, proteksi antrean kosong, dan konsistensi
-antar-format ekspor (angka pada tampilan = angka pada CSV = angka pada Excel).
+antar-format ekspor (angka pada tampilan = angka pada Excel = angka pada hasil cetak).
 
 ---
 

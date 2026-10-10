@@ -225,9 +225,6 @@
                         <button onclick="exportExcel()" class="border-2 border-black bg-black text-white px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-white hover:text-black transition-colors brutal-btn brutal-shadow flex items-center gap-2">
                             <i data-lucide="table" class="w-4 h-4"></i> Excel
                         </button>
-                        <button onclick="exportData()" class="border-2 border-black bg-white text-black px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
-                            <i data-lucide="download" class="w-4 h-4"></i> CSV
-                        </button>
                         <button onclick="printReport()" class="border-2 border-black bg-white text-black px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
                             <i data-lucide="printer" class="w-4 h-4"></i> Print
                         </button>
@@ -1359,7 +1356,7 @@
         }
 
         // === 7. LAPORAN & EKSPOR ===
-        // Satu sumber kebenaran untuk CSV, Excel, dan Print.
+        // Satu sumber kebenaran untuk Excel dan Print.
         function buildReport() {
             const ses = activeSession();
             const durs = serviceDurations(ses.serviceLogs);
@@ -1439,103 +1436,6 @@
             a.click();
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-
-        // --- CSV ---
-        function exportData() {
-            if (!APP.hasData) { UI.showToast("Tidak ada data untuk diekspor", "error"); return; }
-            const r = buildReport();
-            const q = v => `"${String(v).replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
-            const n = (v, d = 4) => (isFinite(v) ? Number(v).toFixed(d) : '-');
-            const rows = [];
-
-            rows.push(['LAPORAN OBSERVASI ANTREAN - MODEL M/M/s']);
-            rows.push([]);
-            rows.push(['A. IDENTITAS OBSERVASI']);
-            rows.push(['Lokasi', q(r.ses.location || '-')]);
-            rows.push(['Pengamat', q(r.ses.operator || '-')]);
-            rows.push(['Tanggal', r.ses.date || '-']);
-            rows.push(['Waktu Mulai', fmtClock(r.ses.startTimestamp)]);
-            rows.push(['Waktu Selesai', fmtClock(r.ses.finishedAt || (r.ses.startTimestamp ? r.ses.startTimestamp + r.ses.elapsedSeconds * 1000 : null))]);
-            rows.push(['Durasi Target (s)', r.ses.targetSeconds]);
-            rows.push(['Durasi Aktual (s)', r.ses.elapsedSeconds]);
-            rows.push(['Jumlah Server (s)', r.ses.servers]);
-            rows.push(['Berhenti', r.ses.autoStopped ? 'Otomatis (waktu habis)' : 'Manual']);
-            rows.push([]);
-
-            rows.push(['B. DATA OBSERVASI']);
-            rows.push(['Total Kedatangan', r.totalArr]);
-            rows.push(['Total Dilayani', r.totalSrv]);
-            rows.push(['Belum Dilayani', r.totalArr - r.totalSrv]);
-            rows.push(['Rasio Pelayanan', n(r.servedRatio * 100, 1) + '%']);
-            rows.push(['Total Durasi Pelayanan (s)', n(r.totalDur, 1)]);
-            rows.push(['Rata-rata Durasi (s)', n(r.avgDur, 2)]);
-            rows.push(['Rata-rata Jarak Kedatangan (s)', n(r.meanInter, 2)]);
-            rows.push([]);
-
-            rows.push(['C. RINCIAN PER SERVER']);
-            rows.push(['Server', 'Jumlah Dilayani', 'Total (s)', 'Rata-rata (s)', 'Min (s)', 'Max (s)', 'Utilitas (%)']);
-            r.perServer.forEach(p => rows.push([
-                'Server ' + p.id, p.count, n(p.total, 1), n(p.avg, 2),
-                n(p.min, 1), n(p.max, 1), n(p.util * 100, 1)
-            ]));
-            rows.push([]);
-
-            rows.push(['D. PARAMETER SISTEM']);
-            rows.push(['Laju Kedatangan (lambda)', n(r.lambda), 'orang/jam']);
-            rows.push(['Laju Pelayanan (mu)', n(r.mu), 'orang/jam/server']);
-            rows.push(['Utilitas / Beban (rho)', n(r.rho), '']);
-            rows.push(['Kapasitas-total (s x mu)', n(r.capacity), 'orang/jam']);
-            rows.push(['Selisih kapasitas', n(r.capacityGap), 'orang/jam']);
-            rows.push(['Kapasitas dipakai (s x mu x rho)', n(r.s * r.mu * r.rho), 'orang/jam']);
-            rows.push([]);
-
-            rows.push(['E. HASIL PERHITUNGAN M/M/s']);
-            if (!r.stable) {
-                rows.push(['Status', 'Sistem TIDAK STABIL (rho >= 1)']);
-                rows.push(['Keterangan', 'Antrean akan tumbuh tanpa batas; rumus M/M/s tidak berlaku.']);
-            } else {
-                rows.push(['Probabilitas Sistem Kosong (P0)', n(r.mms.Po), '']);
-                rows.push(['Rata-rata Antrean (Lq)', n(r.mms.Lq), 'orang']);
-                rows.push(['Rata-rata Sistem (Ls)', n(r.mms.Ls), 'orang']);
-                rows.push(['Rata-rata Waktu Antre (Wq)', n(r.mms.Wq), 'jam']);
-                rows.push(['Rata-rata Waktu Antre (Wq)', n(r.mms.Wq * 60), 'menit']);
-                rows.push(['Rata-rata Waktu Sistem (Ws)', n(r.mms.Ws), 'jam']);
-                rows.push(['Rata-rata Waktu Sistem (Ws)', n(r.mms.Ws * 60), 'menit']);
-            }
-            rows.push([]);
-
-            rows.push(['F. RUMUS YANG DIGUNAKAN']);
-            rows.push(['lambda = Total Kedatangan / Waktu Observasi (jam)']);
-            rows.push(['mu = 3600 / Rata-rata Durasi Pelayanan (detik)']);
-            rows.push(['rho = lambda / (s x mu)']);
-            rows.push(['P0 = 1 / [ SUM(n=0..s-1) (lambda/mu)^n / n! + (lambda/mu)^s / (s! x (1-rho)) ]']);
-            rows.push(['Lq = P0 x (lambda/mu)^s x rho / [ s! x (1-rho)^2 ]']);
-            rows.push(['Ls = Lq + lambda/mu']);
-            rows.push(['Wq = Lq / lambda']);
-            rows.push(['Ws = Wq + 1/mu']);
-            rows.push([]);
-
-            rows.push(['G. LOG KEJADIAN (timestamp relatif dalam detik)']);
-            rows.push(['No', 'Waktu (s)', 'Server', 'Mulai (s)', 'Selesai (s)', 'Durasi (s)']);
-            const base = r.ses.startTimestamp || 0;
-            r.ses.serviceLogs.forEach((l, i) => {
-                const isObj = typeof l === 'object';
-                const st = isObj ? l.start : null, en = isObj ? l.end : null;
-                const dur = isObj ? l.dur : l;
-                rows.push([
-                    i + 1,
-                    st ? n((st - base) / 1000, 1) : '-',
-                    isObj ? 'Server ' + l.server : '-',
-                    st ? n((st - base) / 1000, 1) : '-',
-                    en ? n((en - base) / 1000, 1) : '-',
-                    n(dur, 2)
-                ]);
-            });
-
-            const csv = rows.map(row => row.map(q).join(',')).join('\r\n');
-            downloadFile(csv, `${reportTitle(r)}.csv`, 'text/csv;charset=utf-8;');
-            UI.showToast("Laporan CSV berhasil diunduh", "success");
         }
 
         // --- Excel ( SpreadsheetML, tanpa dependensi eksternal ) ---
