@@ -51,19 +51,6 @@
             100% { transform: translateY(0) translateX(-50%); opacity: 1; }
         }
         .toast-enter { animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-        /* Cetak hanya bagian laporan */
-        @media print {
-            nav, #setup-panel, #counter-panel, #data-empty-state,
-            #sys-modal, #sys-toast-container, header button, .no-print { display: none !important; }
-            body, main, #view-data, #view-data > div {
-                height: auto !important; overflow: visible !important; max-width: 100% !important;
-                padding: 0 !important; background: #fff !important;
-            }
-            .brutal-shadow, .brutal-shadow-lg, .brutal-shadow-sm { box-shadow: none !important; }
-            section { break-inside: avoid; page-break-inside: avoid; }
-            #data-content { display: block !important; }
-        }
     </style>
 </head>
 <body class="h-[100dvh] w-screen overflow-hidden flex flex-col md:flex-row relative">
@@ -224,9 +211,6 @@
                     <div class="flex gap-3 flex-wrap">
                         <button onclick="exportExcel()" class="border-2 border-black bg-black text-white px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-white hover:text-black transition-colors brutal-btn brutal-shadow flex items-center gap-2">
                             <i data-lucide="table" class="w-4 h-4"></i> Excel
-                        </button>
-                        <button onclick="printReport()" class="border-2 border-black bg-white text-black px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
-                            <i data-lucide="printer" class="w-4 h-4"></i> Print
                         </button>
                         <button onclick="resetData()" class="border-2 border-red-600 bg-white text-red-600 px-4 py-2 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors brutal-btn brutal-shadow">
                             Clear
@@ -1356,7 +1340,7 @@
         }
 
         // === 7. LAPORAN & EKSPOR ===
-        // Satu sumber kebenaran untuk Excel dan Print.
+        // Satu sumber kebenaran untuk laporan dan ekspor Excel.
         function buildReport() {
             const ses = activeSession();
             const durs = serviceDurations(ses.serviceLogs);
@@ -1550,12 +1534,6 @@
 
             downloadFile(xml, `${reportTitle(r)}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
             UI.showToast("Laporan Excel berhasil diunduh", "success");
-        }
-
-        // --- Print ---
-        function printReport() {
-            if (!APP.hasData) { UI.showToast("Tidak ada data untuk dicetak", "error"); return; }
-            window.print();
         }
 
     </script>

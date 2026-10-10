@@ -34,13 +34,12 @@ Fitur pendukung:
 ## Ekspor Laporan
 
 Tombol di tab **Analysis** menghasilkan laporan yang siap dikumpulkan.
-Semuanya diturunkan dari satu fungsi `buildReport()`, sehingga angka pada
-tampilan, Excel, dan Print **selalu identik**.
+Seluruh angka diturunkan dari satu fungsi `buildReport()`, sehingga yang tampil
+di layar dan yang ada di file Excel **selalu identik**.
 
 | Tombol | Keluaran |
 |---|---|
 | **Excel** | `.xls` (SpreadsheetML) berisi 5 sheet: Ringkasan, Hasil M-M-s, Per Server, Log Layanan, Log Kedatangan |
-| **Print** | Cetak langsung ke printer / simpan sebagai PDF dari dialog cetak |
 
 ### Isi laporan
 
@@ -159,7 +158,7 @@ Hasil: **seluruh skenario cocok** (selisih < 1e−4 pada nilai yang ditampilkan,
 
 Pengujian fungsional juga menutup jalur di mana data bisa rusak: filter durasi 0
 dan tidak-finite, migrasi state versi lama, proteksi antrean kosong, dan konsistensi
-antar-format ekspor (angka pada tampilan = angka pada Excel = angka pada hasil cetak).
+antar-format (angka pada tampilan = angka pada file Excel).
 
 ---
 
