@@ -164,4 +164,6 @@ antar-format (angka pada tampilan = angka pada file Excel).
 
 ## Lisensi
 
-[MIT](LICENSE) © Rafi Sanjaya
+[MIT](LICENSE)
+
+Copyright (c) 2026 Rafi Sanjaya
