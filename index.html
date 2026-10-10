@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Queue Tracker | M/M/s Observation Tool</title>
+    <!-- Tailwind CSS for robust, minimalist styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #ffffff;
+            color: #171717;
+            overscroll-behavior-y: none; 
+            /* SECURITY: Disable global text selection & interaction to prevent copying */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        /* Custom Scrollbar for Minimalist UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
+        
+        .no-select { user-select: none; }
+
+        .brutal-btn { transition: all 0.1s ease-in-out; }
+        .brutal-btn:active { transform: scale(0.97); }
+        .brutal-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+        .brutal-shadow-lg { box-shadow: 8px 8px 0px 0px rgba(0,0,0,1); }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        
+        /* SECURITY: Allow input text selection */
+        input { user-select: auto; -webkit-user-select: auto; }
+
+        /* Animation for custom Toasts */
+        @keyframes slideDown {
+            0% { transform: translateY(-150%) translateX(-50%); opacity: 0; }
+            100% { transform: translateY(0) translateX(-50%); opacity: 1; }
+        }
+        .toast-enter { animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    </style>
+</head>
+<body class="h-[100dvh] w-screen overflow-hidden flex flex-col md:flex-row relative">
+
+    <!-- === SYSTEM: CUSTOM MODAL === -->
+    <div id="sys-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 px-6 transition-opacity">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-sm brutal-shadow-lg transform scale-100 transition-transform">
+            <h3 id="sys-modal-title" class="text-xl font-black uppercase mb-2 tracking-tight">Warning</h3>
+            <p id="sys-modal-desc" class="text-sm font-medium text-gray-700 mb-6 leading-relaxed">Pesan konfirmasi sistem.</p>
+            <div class="flex gap-3 justify-end">
+                <button id="sys-modal-cancel" class="brutal-btn px-4 py-2.5 text-xs font-bold border border-black text-gray-600 hover:bg-gray-100 uppercase tracking-wider">Batal</button>
+                <button id="sys-modal-confirm" class="brutal-btn px-5 py-2.5 text-xs font-bold bg-black text-white hover:bg-gray-800 uppercase tracking-wider brutal-shadow">Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === SYSTEM: TOAST CONTAINER === -->
+    <div id="sys-toast-container" class="fixed top-6 left-1/2 z-[100] flex flex-col gap-3 pointer-events-none w-[90%] max-w-sm"></div>
+
+    <!-- ========================================== -->
+    <!-- NAVIGATION                                 -->
+    <!-- ========================================== -->
+    <nav class="bg-[#fafafa] border-t border-[#e5e5e5] md:border-t-0 md:border-r md:w-64 flex md:flex-col justify-around md:justify-start fixed bottom-0 w-full md:relative md:h-full z-50 order-2 md:order-1">
+        <div class="hidden md:flex p-6 border-b border-[#e5e5e5] items-center gap-3">
+            <div class="bg-black text-white p-1.5 rounded-sm"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div>
+            <div>
+                <h1 class="font-bold tracking-tight text-[15px] uppercase">Queue Tracker</h1>
+                <p class="text-[10px] text-gray-500 font-medium">M/M/s Observation Tool</p>
+            </div>
+        </div>
+        <div class="flex md:flex-col w-full md:w-auto p-2 md:p-4 gap-1 md:gap-2">
+            <button onclick="switchView('tracker')" id="nav-tracker" class="nav-btn flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-3 md:px-4 rounded-sm bg-black text-white transition-colors">
+                <i data-lucide="timer" class="w-5 h-5 md:w-4 md:h-4"></i>
+                <span class="text-[10px] md:text-sm font-semibold uppercase tracking-wider">Tracker</span>
+            </button>
+            <button onclick="switchView('data')" id="nav-data" class="nav-btn flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-3 md:px-4 rounded-sm text-gray-500 hover:bg-[#f5f5f5] hover:text-black transition-colors">
+                <i data-lucide="database" class="w-5 h-5 md:w-4 md:h-4"></i>
+                <span class="text-[10px] md:text-sm font-semibold uppercase tracking-wider">Analysis</span>
+            </button>
+            <button onclick="switchView('guide')" id="nav-guide" class="nav-btn flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-3 md:px-4 rounded-sm text-gray-500 hover:bg-[#f5f5f5] hover:text-black transition-colors">
+                <i data-lucide="help-circle" class="w-5 h-5 md:w-4 md:h-4"></i>
+                <span class="text-[10px] md:text-sm font-semibold uppercase tracking-wider">Guide</span>
+            </button>
+            <button onclick="switchView('author')" id="nav-author" class="nav-btn flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-3 md:px-4 rounded-sm text-gray-500 hover:bg-[#f5f5f5] hover:text-black transition-colors">
+                <i data-lucide="user-circle-2" class="w-5 h-5 md:w-4 md:h-4"></i>
+                <span class="text-[10px] md:text-sm font-semibold uppercase tracking-wider">Author</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- MAIN CONTENT AREA                          -->
+    <!-- ========================================== -->
+    <main class="flex-1 bg-white h-full w-full order-1 md:order-2 overflow-hidden flex flex-col relative">
+        
+        <!-- 1. VIEW: TRACKER -->
+        <div id="view-tracker" class="view-section h-full flex flex-col p-4 md:p-8 max-w-6xl mx-auto w-full">
+            
+            <!-- Header -->
+            <div class="flex-none mb-4 md:mb-6 flex justify-between items-end border-b border-[#e5e5e5] pb-4">
+                <div>
+                    <h2 class="text-xl md:text-2xl font-black tracking-tight uppercase">Queue Tracker</h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse hidden" id="status-indicator"></span>
+                        <p class="text-[11px] md:text-xs text-gray-500 font-bold uppercase tracking-widest" id="status-text">Standby Mode</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl md:text-4xl font-mono tracking-tighter font-black" id="timer-display">00:00:00</div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Time Remaining</span>
+                </div>
+            </div>
+
+            <!-- SETUP PANEL -->
+            <div id="setup-panel" class="flex-none grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 bg-[#fafafa] p-4 border-2 border-gray-200 rounded-sm">
+                <div class="md:col-span-4 flex flex-col">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Object Location</label>
+                    <input type="text" id="loc-input" value="Minimarket XYZ" class="border-2 border-gray-300 p-2.5 text-sm font-bold focus:outline-none focus:border-black rounded-sm bg-white transition-colors">
+                </div>
+                <div class="md:col-span-4 flex flex-col">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Duration (HH:MM:SS)</label>
+                    <div class="flex border-2 border-gray-300 rounded-sm bg-white focus-within:border-black transition-colors">
+                        <input type="number" id="time-hr" value="1" min="0" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
+                        <span class="p-2.5 text-gray-300 font-bold">:</span>
+                        <input type="number" id="time-min" value="0" min="0" max="59" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
+                        <span class="p-2.5 text-gray-300 font-bold">:</span>
+                        <input type="number" id="time-sec" value="0" min="0" max="59" class="w-full text-center p-2.5 text-sm font-bold outline-none bg-transparent">
+                    </div>
+                </div>
+                <div class="md:col-span-4 flex flex-col">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 tracking-wider">Servers (s)</label>
+                    <div class="flex border-2 border-gray-300 rounded-sm bg-white">
+                        <button onclick="changeServers(-1)" class="px-4 py-2 hover:bg-gray-100 text-lg font-bold border-r-2 border-gray-300 brutal-btn">-</button>
+                        <input type="number" id="server-input" value="2" readonly class="w-full text-center text-sm font-black outline-none bg-transparent pointer-events-none">
+                        <button onclick="changeServers(1)" class="px-4 py-2 hover:bg-gray-100 text-lg font-bold border-l-2 border-gray-300 brutal-btn">+</button>
+                    </div>
+                </div>
+                <div class="md:col-span-12 mt-1">
+                    <button id="btn-toggle" onclick="toggleObservation()" class="w-full bg-black text-white font-black py-4 text-sm uppercase tracking-wider rounded-sm hover:bg-gray-800 brutal-shadow brutal-btn">
+                        START RECORDING
+                    </button>
+                </div>
+            </div>
+
+            <!-- LIVE COUNTER UI -->
+            <div id="counter-panel" class="hidden flex-1 min-h-0 flex-col md:flex-row gap-5 pb-20 md:pb-0">
+                
+                <!-- Queue Area -->
+                <div class="flex-none md:flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Queue</span>
+                        <span class="text-[10px] font-bold text-black bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-sm uppercase">Total In: <span id="stat-total-in">0</span></span>
+                    </div>
+                    
+                    <button onclick="recordArrival()" class="no-select flex-1 min-h-[160px] brutal-btn bg-white border-4 border-black rounded-sm flex flex-col items-center justify-center p-4 hover:bg-gray-50 active:bg-gray-200 transition-colors brutal-shadow">
+                        <span class="text-black text-xs font-black uppercase tracking-widest mb-1">+1 TO QUEUE</span>
+                        <span id="count-queue" class="text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-black">0</span>
+                        <span class="text-gray-500 text-[10px] mt-2 font-bold uppercase tracking-widest flex items-center gap-1">
+                            <i data-lucide="mouse-pointer-click" class="w-3 h-3"></i> Tap on arrival
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Servers Area -->
+                <div class="flex-1 flex flex-col min-h-0 md:h-full">
+                    <div class="flex-none flex justify-between items-center mb-2 px-1">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Service Counters</span>
+                        <span class="text-[10px] font-bold text-black bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-sm uppercase">Completed: <span id="stat-total-served">0</span></span>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto no-select border-2 border-gray-200 bg-[#fafafa] p-3 rounded-sm shadow-inner">
+                        <div id="server-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-max">
+                            <!-- Server buttons injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 2. VIEW: DATA & ANALYSIS -->
+        <div id="view-data" class="view-section hidden h-full flex flex-col relative">
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 max-w-5xl mx-auto w-full pb-24 md:pb-8">
+                
+                <div class="mb-8 border-b-2 border-black pb-4 flex flex-col md:flex-row justify-between md:items-end gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black tracking-tight uppercase">Analytical Report</h2>
+                        <p class="text-xs text-gray-500 mt-1 font-bold tracking-widest uppercase">M/M/s Model Results</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="exportData()" class="border-2 border-black bg-white text-black px-5 py-2 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i> CSV
+                        </button>
+                        <button onclick="resetData()" class="border-2 border-red-600 bg-white text-red-600 px-5 py-2 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors brutal-btn brutal-shadow">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div id="data-empty-state" class="py-24 text-center border-2 border-dashed border-gray-300 bg-gray-50 mt-4 rounded-sm">
+                    <i data-lucide="bar-chart-3" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-black text-gray-400 uppercase tracking-widest">No Data Available</h3>
+                    <p class="text-sm text-gray-400 mt-2 font-medium">Run the Tracker first to generate analysis.</p>
+                </div>
+
+                <div id="data-content" class="hidden space-y-10">
+                    <!-- Raw Data -->
+                    <section>
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
+                            Raw Metrics
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Arrivals</div>
+                                <div class="text-3xl font-black" id="rep-arrivals">-</div>
+                            </div>
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Served</div>
+                                <div class="text-3xl font-black" id="rep-served">-</div>
+                            </div>
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Servers (s)</div>
+                                <div class="text-3xl font-black" id="rep-s">-</div>
+                            </div>
+                            <div class="border-2 border-black p-4 bg-white brutal-shadow">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Obs. Time</div>
+                                <div class="text-3xl font-black" id="rep-time">-</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- System Parameters -->
+                    <section>
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
+                            Rates (&lambda; & &mu;)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border-2 border-black p-5 flex justify-between items-center bg-[#fafafa]">
+                                <div>
+                                    <div class="text-xs text-black font-black uppercase tracking-widest mb-1">Arrival Rate (&lambda;)</div>
+                                    <div class="text-4xl font-black text-blue-600" id="rep-lambda">-</div>
+                                    <div class="text-[10px] text-gray-500 mt-2 font-bold uppercase">customers / hour</div>
+                                </div>
+                            </div>
+                            <div class="border-2 border-black p-5 flex justify-between items-center bg-[#fafafa]">
+                                <div>
+                                    <div class="text-xs text-black font-black uppercase tracking-widest mb-1">Service Rate (&mu;)</div>
+                                    <div class="text-4xl font-black text-green-600" id="rep-mu">-</div>
+                                    <div class="text-[10px] text-gray-500 mt-2 font-bold uppercase">customers / hr / srvr</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div id="unstable-warning" class="hidden bg-red-600 text-white p-5 border-4 border-black brutal-shadow-lg transform -rotate-1">
+                        <h4 class="font-black uppercase tracking-widest text-lg flex items-center gap-2 mb-2">
+                            <i data-lucide="siren" class="w-6 h-6"></i> System Overload!
+                        </h4>
+                        <p class="text-sm text-red-100 font-medium leading-relaxed">The arrival rate (&lambda;) exceeds total service capacity. The queue will grow infinitely. M/M/s standard formulas cannot be applied accurately.</p>
+                    </div>
+
+                    <!-- M/M/s Results -->
+                    <section id="results-section">
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-l-4 border-black pl-3">
+                            Calculations
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-0 border-2 border-black bg-black p-[2px]">
+                            <div class="bg-white p-5 border border-black hover:bg-gray-50 transition-colors">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">c. Utilitas Server (P)</div>
+                                <div class="text-3xl font-black" id="calc-p">-</div>
+                            </div>
+                            <div class="bg-white p-5 border border-black hover:bg-gray-50 transition-colors">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">f. Prob. Kosong (Po)</div>
+                                <div class="text-3xl font-black" id="calc-po">-</div>
+                            </div>
+                            <div class="bg-white p-5 border border-black hover:bg-gray-50 transition-colors">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">a. Antre (Lq)</div>
+                                <div class="text-3xl font-black" id="calc-lq">-</div>
+                            </div>
+                            <div class="bg-white p-5 border border-black hover:bg-gray-50 transition-colors">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">b. Sistem (Ls)</div>
+                                <div class="text-3xl font-black" id="calc-ls">-</div>
+                            </div>
+                            <div class="bg-white p-5 border border-black hover:bg-gray-50 transition-colors">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">d. Waktu Antre (Wq)</div>
+                                <div class="text-2xl font-black text-red-600" id="calc-wq">-</div>
+                                <div class="text-[10px] text-gray-600 mt-1 font-bold" id="calc-wq-min"></div>
+                            </div>
+                            <div class="bg-white p-5 border border-black hover:bg-gray-50 transition-colors">
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">e. Waktu Sistem (Ws)</div>
+                                <div class="text-2xl font-black text-red-600" id="calc-ws">-</div>
+                                <div class="text-[10px] text-gray-600 mt-1 font-bold" id="calc-ws-min"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Conclusion -->
+                    <section id="conclusion-section" class="bg-[#fafafa] border-2 border-black p-6 brutal-shadow mb-10">
+                        <h3 class="text-sm font-black uppercase tracking-widest mb-4 inline-block bg-black text-white px-3 py-1">Smart Conclusion Engine</h3>
+                        <div id="conclusion-text" class="space-y-4">
+                            <!-- Dynamic Content generated by JS -->
+                            -
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. VIEW: GUIDE -->
+        <div id="view-guide" class="view-section hidden h-full overflow-y-auto p-4 md:p-8 max-w-4xl mx-auto w-full pb-24 md:pb-8">
+            <h2 class="text-2xl font-black tracking-tight uppercase mb-6 border-b border-[#e5e5e5] pb-4">How To Use App</h2>
+            
+            <div class="space-y-6">
+                <!-- Concept -->
+                <div class="border border-black p-5 bg-white brutal-shadow">
+                    <h3 class="text-sm font-black uppercase mb-3 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4"></i> Konsep Aplikasi
+                    </h3>
+                    <p class="text-sm text-gray-700 leading-relaxed font-medium">
+                        Aplikasi ini mendigitalisasi proses observasi manual teori antrean. Berfungsi ganda sebagai <strong>Tally Counter pintar</strong> di lapangan, sekaligus <strong>Kalkulator Analitis</strong> yang langsung menerapkan rumus M/M/s (Model Kendall) berdasarkan data observasi Anda. Dilengkapi proteksi keamanan untuk keaslian data observasi.
+                    </p>
+                </div>
+
+                <!-- Steps -->
+                <div class="relative border-l-2 border-black ml-3 pl-6 space-y-8 py-2">
+                    
+                    <div class="relative">
+                        <span class="absolute -left-[35px] top-0 bg-black text-white w-6 h-6 flex items-center justify-center font-bold text-xs rounded-full">1</span>
+                        <h4 class="text-sm font-bold uppercase tracking-wider">Persiapan (Setup)</h4>
+                        <p class="text-sm text-gray-600 mt-1 font-medium">Masuk ke menu <strong>Tracker</strong>. Tentukan lokasi, atur durasi target observasi (misal: 1 Jam), dan tentukan jumlah server/kasir yang aktif (s).</p>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute -left-[35px] top-0 bg-black text-white w-6 h-6 flex items-center justify-center font-bold text-xs rounded-full">2</span>
+                        <h4 class="text-sm font-bold uppercase tracking-wider">Perekaman (Recording)</h4>
+                        <p class="text-sm text-gray-600 mt-1 font-medium">Tekan <strong>START RECORDING</strong>. Waktu mundur akan berjalan. Proses pencatatan lapangan dimulai.</p>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute -left-[35px] top-0 bg-black text-white w-6 h-6 flex items-center justify-center font-bold text-xs rounded-full">3</span>
+                        <h4 class="text-sm font-bold uppercase tracking-wider">Simulasi Antrean (Sangat Penting!)</h4>
+                        <ul class="text-sm text-gray-600 mt-2 font-medium list-disc ml-4 space-y-2">
+                            <li>Setiap ada pelanggan datang dan masuk barisan, tekan tombol besar <strong>+1 TO QUEUE</strong>. Angka antrean akan bertambah.</li>
+                            <li>Ketika kasir kosong memanggil pelanggan, tekan tombol <strong>FREE</strong> pada kasir tersebut. Tombol menjadi hitam (<strong>BUSY</strong>) dan <strong>angka antrean otomatis berkurang 1</strong>.</li>
+                            <li>Ketika pelanggan selesai dilayani, tekan kembali tombol <strong>BUSY</strong> kasir tersebut. Status menjadi FREE dan durasi pelayanannya tercatat di sistem.</li>
+                        </ul>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute -left-[35px] top-0 bg-black text-white w-6 h-6 flex items-center justify-center font-bold text-xs rounded-full">4</span>
+                        <h4 class="text-sm font-bold uppercase tracking-wider">Selesai & Analisis</h4>
+                        <p class="text-sm text-gray-600 mt-1 font-medium">Observasi berhenti otomatis jika waktu habis. Jika ditutup paksa, sistem tidak mencatat waktu menggantung ke log pelayanan. Sistem langsung menyajikan perhitungan M/M/s di menu <strong>Analysis</strong>.</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. VIEW: AUTHOR & PORTFOLIO -->
+        <div id="view-author" class="view-section hidden h-full overflow-y-auto p-4 md:p-8 flex flex-col items-center bg-[#f5f5f5] pb-24 md:pb-8">
+            
+            <div class="max-w-[500px] w-full border-2 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] my-auto relative">
+                <div class="h-[120px] bg-black w-full flex items-center px-6 overflow-hidden relative">
+                    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_white_1px,_transparent_1px)]" style="background-size: 10px 10px;"></div>
+                    <span class="text-white font-mono text-[10px] font-black tracking-[0.3em] z-10 relative">DEV.SYS // IDENTIFICATION</span>
+                </div>
+                
+                <div class="px-6 pb-8 relative">
+                    <div class="absolute -top-12 border-4 border-black bg-white rounded-full w-24 h-24 flex items-center justify-center brutal-shadow">
+                        <i data-lucide="code-2" class="w-10 h-10 text-black"></i>
+                    </div>
+                    
+                    <div class="pt-16">
+                        <h2 class="text-3xl font-black uppercase tracking-tighter leading-none">Rafi</h2>
+                        <p class="text-[10px] text-gray-500 mt-1 font-bold uppercase tracking-widest border-b-2 border-black pb-4 inline-block">Mahasiswa</p>
+                        
+                        <p class="text-sm text-gray-800 leading-relaxed font-medium mt-5 mb-6 text-justify">
+                           Aplikasi <strong>Queue Tracker</strong> dirancang khusus untuk mempercepat proses perekaman data manual lapangan pada praktikum Teori Antrean (Model M/M/s). Dibangun dengan arsitektur yang ringan dan logika penguncian antrean cerdas (Smart Queue Lock) untuk memastikan integritas data.
+                        </p>
+                        
+                        <div class="flex flex-wrap gap-3 mb-8">
+                            <a href="https://www.linkedin.com/in/rafi-sanjaya-43803a30b/" target="_blank" class="flex-1 flex justify-center items-center gap-2 border-2 border-black bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider hover:bg-[#0A66C2] hover:text-white transition-colors brutal-btn brutal-shadow group">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-black group-hover:text-white transition-colors">
+                                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                                    <rect width="4" height="12" x="2" y="9"></rect>
+                                    <circle cx="4" cy="4" r="2"></circle>
+                                </svg>
+                                LinkedIn
+                            </a>
+                            <a href="https://github.com/mhmmdrfisn" target="_blank" rel="noopener noreferrer" class="flex-1 flex justify-center items-center gap-2 border-2 border-black bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors brutal-btn brutal-shadow group">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-black group-hover:text-white transition-colors">
+                                    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.5-1.4 6.5-7a4.6 4.6 0 0 0-1.39-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.35-3.5 1.36a11.39 11.39 0 0 0-6 0c-2.4-1.71-3.5-1.36-3.5-1.36a4.2 4.2 0 0 0-.1 3.2 4.6 4.6 0 0 0-1.39 3.2c0 5.6 3.35 6.65 6.5 7A4.8 4.8 0 0 0 8 18v4"></path>
+                                </svg>
+                                GitHub
+                            </a>
+                            <a href="https://www.Instagram.com/mhmmdrfisn" target="_blank" class="flex-1 flex justify-center items-center gap-2 border-2 border-black bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider hover:bg-[#E1306C] hover:text-white transition-colors brutal-btn brutal-shadow group">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-black group-hover:text-white transition-colors">
+                                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+                                </svg>
+                                Instagram
+                            </a>
+                        </div>
+
+                        <div class="border-t-4 border-black pt-6">
+                            <h3 class="text-xs font-black text-black uppercase tracking-widest mb-4 flex justify-between items-center bg-gray-100 p-2 border-2 border-black brutal-shadow-sm">
+                                <span>Recent Projects Archive</span>
+                                <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+                            </h3>
+                            
+                            <div id="portfolio-list" class="flex flex-col gap-4">
+                                </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT APP LOGIC                       -->
+    <!-- ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // === 1. PROTEKSI DATA OBSERVASI ===
+        // Mencegah akses source code saat praktikum berlangsung.
+        document.addEventListener('contextmenu', e => { e.preventDefault(); UI.showToast('Tindakan Dilarang: Akses Sistem Terkunci', 'error'); });
+        document.addEventListener('dragstart', e => e.preventDefault());
+
+        document.onkeydown = function(e) {
+            // F12 dan F5
+            if(e.keyCode == 123 || e.keyCode == 116) { e.preventDefault(); UI.showToast('Security Alert: Action Blocked', 'error'); return false; }
+            // Ctrl+Shift+I / C / J
+            if(e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 67 || e.keyCode == 74)) { e.preventDefault(); return false; }
+            // Ctrl+U / S / R
+            if(e.ctrlKey && !e.shiftKey && (e.keyCode == 85 || e.keyCode == 83 || e.keyCode == 82)) {
+                e.preventDefault();
+                UI.showToast('Security Alert: Source Action Blocked', 'error');
+                return false;
+            }
+        };
+
+        // === 2. WAKE LOCK API (CEGAH LAYAR MATI) ===
+        let wakeLock = null;
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) { /* ditolak browser, mis. konteks tidak aman */ }
+        };
+        const releaseWakeLock = async () => {
+            try {
+                if (wakeLock !== null) {
+                    await wakeLock.release();
+                    wakeLock = null;
+                }
+            } catch (err) { /* sudah dilepas otomatis browser */ }
+        };
+        // Minta ulang wakelock bila tab kembali terlihat saat masih merekam
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && APP.isRecording && wakeLock === null) {
+                await requestWakeLock();
+            }
+        });
+
+
+        // === 3. CUSTOM UI ENGINE (MODAL & TOAST) ===
+        const UI = {
+            showToast(message, type = 'info') {
+                const container = document.getElementById('sys-toast-container');
+                const toast = document.createElement('div');
+                let bgClass = "bg-black text-white";
+                let iconName = "info";
+                
+                if (type === 'error') { bgClass = "bg-red-600 text-white"; iconName = "alert-octagon"; }
+                else if (type === 'success') { bgClass = "bg-green-600 text-white"; iconName = "check-circle-2"; }
+                else if (type === 'warning') { bgClass = "bg-yellow-400 text-black"; iconName = "alert-triangle"; }
+
+                toast.className = `flex items-center justify-between gap-3 p-4 border-2 border-black brutal-shadow font-bold text-xs uppercase tracking-wider transform -translate-x-1/2 left-1/2 toast-enter ${bgClass}`;
+                toast.innerHTML = `<div class="flex items-center gap-3"><i data-lucide="${iconName}" class="w-5 h-5 flex-shrink-0"></i><span class="leading-relaxed">${message}</span></div>`;
+                
+                container.appendChild(toast);
+                lucide.createIcons({ root: toast });
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px) translateX(-50%)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            },
+            showModal(title, desc, confirmText, callback) {
+                const modal = document.getElementById('sys-modal');
+                document.getElementById('sys-modal-title').innerText = title;
+                document.getElementById('sys-modal-desc').innerText = desc;
+                
+                const btnConfirm = document.getElementById('sys-modal-confirm');
+                btnConfirm.innerText = confirmText;
+                modal.classList.remove('hidden');
+
+                const closeModal = () => modal.classList.add('hidden');
+
+                const newBtnConfirm = btnConfirm.cloneNode(true);
+                btnConfirm.replaceWith(newBtnConfirm);
+                const btnCancel = document.getElementById('sys-modal-cancel');
+                const newBtnCancel = btnCancel.cloneNode(true);
+                btnCancel.replaceWith(newBtnCancel);
+
+                newBtnCancel.addEventListener('click', closeModal);
+                newBtnConfirm.addEventListener('click', () => { closeModal(); if(callback) callback(); });
+            }
+        };
+
+        // === 4. PORTFOLIO DATA MANAGER ===
+        const MY_PROJECTS = [
+            {
+                title: "Virtual Tour Campus Tel-U",
+                desc: "Sebuah platform web interaktif yang menyajikan virtual tour lingkungan Telkom University berbasis visual 360°. Web ini mengintegrasikan navigasi peta digital yang responsif dan titik informasi (hotspots) interaktif untuk memberikan pengalaman orientasi kampus yang modern, cepat, dan mudah diakses.",
+                tags: "Wordpress",
+                url: "https://360.telkomuniversity.ac.id/"
+            },
+            {
+                title: "Kasirin Bro",
+                desc: "Aplikasi Kasir Standar Toko berbasis Web.",
+                tags: "PHP / SQL",
+                url: "#"
+            },
+            {
+                title: "Student Portal",
+                desc: "Sebuah wadah transparan bagi seluruh siswa untuk menyampaikan aspirasi, saran, dan kritik kepada pihak sekolah, yang alur tindak lanjutnya dapat dipantau langsung oleh OSIS serta Kesiswaan, sekaligus dapat dilihat oleh siswa lainnya.",
+                tags: "PHP / SQL",
+                url: "#"
+            },
+            {
+                title: "Momentara",
+                desc: "Aplikasi web-based photobooth yang mengubah kamera HP atau laptop Anda menjadi bilik foto instan yang seru. Pengguna dapat langsung berpose, memilih berbagai desain frame yang unik dan estetik, serta mengunduh dengan kualitas tinggi untuk langsung dibagikan ke media sosial.",
+                tags: "Javascript / HTML / TailWind",
+                url: "https://momentara-bytexindonesia.netlify.app/"
+            },
+            {
+                title: "Poskes",
+                desc: "(Pos Kesehatan) dirancang khusus untuk mendukung pelayanan kesehatan di lapangan selama kegiatan MOSAIK ULBI, mulai dari pencatatan pasien baru beserta tanda vitalnya, pemantauan status penanganan secara langsung, hingga rekap riwayat kesehatan yang dapat dibagikan dalam sekali klik. Dibangun dengan antarmuka yang ringan dan alur yang sederhana.",
+                tags: "Javascript / HTML / TailWind",
+                url: "#"
+            },
+            {
+                title: "IftarSync",
+                desc: "Aplikasi modern yang menyelaraskan kebutuhan peserta dan kepanitiaan dalam momen Ramadan. Melalui halaman user yang interaktif, peserta dapat melihat detail acara, mengisi data diri, serta mengonfirmasi kehadiran beserta pesanan khusus mereka. Di sisi lain, panel admin bertindak sebagai pusat kendali cerdas yang melacak aliran dana masuk, memverifikasi bukti bayar, dan menyajikan rekap data akurat untuk menghindari kesalahan komunikasi selama persiapan acara.",
+                tags: "Javascript / GAS / TailWind",
+                url: "#"
+            },
+            {
+                title: "SimplexCalc",
+                desc: "Aplikasi SimplexCalc dirancang khusus untuk membantu dan mempercepat proses pengerjaan manual algoritma programa linear dengan Metode Simpleks dan Big-M. Dilengkapi dengan kalkulator matriks aljabar yang matematis, sehingga terhindar dari kesalahan hitung dan bisa fokus pada pemahaman logika iterasi.",
+                tags: "Javascript / HTML / TailWind",
+                url: "https://simplexcalc-bytexindonesia.netlify.app/"
+            },
+             {
+                title: "Laksamana Cloud Storage",
+                desc: "Aplikasi cloud storage gratis. Aplikasi ini dirancang untuk menyederhanakan manajemen file Anda dengan antarmuka yang bersih dan penyimpanan awan yang andal tanpa biaya tersembunyi. Unggah, simpan, dan kelola data Anda kapan saja dengan efisiensi tingkat tinggi.",
+                tags: "Javascript / GAS / TailWind",
+                url: "#"
+            },
+            {
+                title: "Healing Loko",
+                desc: "Aplikasi pemesanan tiket kereta api online ini dirancang untuk memenuhi tugas akhir dan memberikan pengalaman memesan perjalanan yang cepat, praktis, dan tanpa ribet. Mulai dari cek jadwal real-time, pilih kursi favorit secara interaktif, hingga pembayaran instan, semua bisa diselesaikan dalam hitungan detik agar perjalanan Anda menjadi lebih tenang dan terencana.",
+                tags: "Node JS / React",
+                url: "#"
+            }
+        ];
+
+        function renderPortfolio() {
+            const container = document.getElementById('portfolio-list');
+            container.innerHTML = '';
+            
+            MY_PROJECTS.forEach(proj => {
+                const isLinkActive = proj.url !== "#";
+                
+                // Gunakan <a> jika ada link, jika tidak gunakan <div> biasa
+                const elementTag = isLinkActive ? 'a' : 'div';
+                const item = document.createElement(elementTag);
+                
+                if (isLinkActive) {
+                    item.href = proj.url;
+                    item.target = "_blank";
+                }
+                
+                // Styling Neo-Brutalism murni
+                item.className = "group block border-2 border-black bg-white p-5 hover:bg-gray-100 transition-colors brutal-btn brutal-shadow cursor-pointer relative overflow-hidden";
+                
+                item.innerHTML = `
+                    <div class="flex justify-between items-start gap-4 mb-3">
+                        <h4 class="text-sm font-black uppercase tracking-tight text-black leading-snug">${proj.title}</h4>
+                        ${isLinkActive ? '<i data-lucide="arrow-up-right" class="w-5 h-5 text-black bg-yellow-300 rounded-full flex-shrink-0 border-2 border-black p-0.5"></i>' : '<i data-lucide="lock" class="w-5 h-5 text-gray-400 flex-shrink-0"></i>'}
+                    </div>
+                    <p class="text-[11px] text-gray-700 font-medium leading-relaxed text-justify mb-4">${proj.desc}</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${proj.tags.split('/').map(tag => `<span class="bg-black text-white px-2 py-1 text-[9px] font-black uppercase tracking-widest">${tag.trim()}</span>`).join('')}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+            lucide.createIcons({ root: container });
+        }
+        renderPortfolio();
+
+        // === 5. CORE APP LOGIC & AUTO-SAVE (LOCAL STORAGE) ===
+        const APP = {
+            view: 'tracker',
+            isRecording: false,
+            targetSeconds: 3600,
+            elapsedSeconds: 0,
+            startTimestamp: null, 
+            config: { servers: 2, location: '' },
+            data: { totalArrivals: 0, activeQueue: 0, serviceLogs: [], serverStates: [] },
+            hasData: false 
+        };
+        let timerInterval = null;
+
+        // Simpan state ke localStorage
+        function saveState() {
+            localStorage.setItem('qt_state_v1', JSON.stringify(APP));
+        }
+
+        // Pulihkan state saat aplikasi dibuka
+        window.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('qt_state_v1');
+            if (!saved) return;
+
+            try {
+                Object.assign(APP, JSON.parse(saved));
+                normalizeState();
+
+                document.getElementById('loc-input').value = APP.config.location;
+                document.getElementById('server-input').value = APP.config.servers;
+
+                if (APP.isRecording) {
+                    // Sisa waktu dihitung dari timestamp agar tetap akurat
+                    // meski browser sempat ditutup di tengah observasi.
+                    APP.elapsedSeconds = Math.floor((Date.now() - APP.startTimestamp) / 1000);
+                    if (APP.elapsedSeconds >= APP.targetSeconds) {
+                        stopObservation(true);
+                    } else {
+                        resumeRecordingUI();
+                    }
+                } else if (APP.hasData) {
+                    switchView('data');
+                }
+            } catch (e) {
+                localStorage.removeItem('qt_state_v1');
+                location.reload();
+            }
+        });
+
+        // Pastikan bentuk state valid sebelum dipakai, termasuk state versi lama
+        // yang masih menyimpan waktu mulai dalam satuan detik.
+        function normalizeState() {
+            APP.config ||= { servers: 2, location: '' };
+            APP.config.servers = Math.min(20, Math.max(1, parseInt(APP.config.servers) || 2));
+            APP.data ||= {};
+            APP.data.totalArrivals = Math.max(0, parseInt(APP.data.totalArrivals) || 0);
+            APP.data.activeQueue = Math.max(0, parseInt(APP.data.activeQueue) || 0);
+            APP.data.serviceLogs = Array.isArray(APP.data.serviceLogs)
+                ? APP.data.serviceLogs.filter(d => typeof d === 'number' && isFinite(d) && d > 0)
+                : [];
+
+            if (!Array.isArray(APP.data.serverStates)) APP.data.serverStates = [];
+            APP.data.serverStates.forEach(srv => {
+                // Versi lama menyimpan startTime dalam detik relatif terhadap elapsed.
+                // Number(null) bernilai 0, jadi null harus dicek lebih dulu.
+                if (srv.startTs === undefined || srv.startTs === null) {
+                    const legacy = (srv.startTime === null || srv.startTime === undefined)
+                        ? null
+                        : Number(srv.startTime);
+                    srv.startTs = (legacy !== null && isFinite(legacy) && APP.startTimestamp)
+                        ? APP.startTimestamp + legacy * 1000
+                        : null;
+                }
+                delete srv.startTime;
+            });
+
+            APP.elapsedSeconds = Math.max(0, parseInt(APP.elapsedSeconds) || 0);
+            APP.targetSeconds = Math.max(0, parseInt(APP.targetSeconds) || 0);
+        }
+
+        function switchView(viewId) {
+            APP.view = viewId;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-black', 'text-white');
+                btn.classList.add('text-gray-500', 'hover:bg-[#f5f5f5]', 'hover:text-black');
+            });
+
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${viewId}`);
+            activeBtn.classList.remove('text-gray-500', 'hover:bg-[#f5f5f5]', 'hover:text-black');
+            activeBtn.classList.add('bg-black', 'text-white');
+
+            if (viewId === 'data') renderDataAnalysis();
+        }
+
+        function changeServers(delta) {
+            if (APP.isRecording) { UI.showToast("Tidak bisa ganti server saat merekam!", "warning"); return; }
+            const newVal = APP.config.servers + delta;
+            if (newVal >= 1 && newVal <= 20) { 
+                APP.config.servers = newVal;
+                document.getElementById('server-input').value = APP.config.servers;
+                saveState();
+            }
+        }
+
+        function getTargetSeconds() {
+            const h = Math.min(99, Math.max(0, parseInt(document.getElementById('time-hr').value) || 0));
+            const m = Math.min(59, Math.max(0, parseInt(document.getElementById('time-min').value) || 0));
+            const s = Math.min(59, Math.max(0, parseInt(document.getElementById('time-sec').value) || 0));
+            return (h * 3600) + (m * 60) + s;
+        }
+
+        function buildServerGrid() {
+            const grid = document.getElementById('server-grid');
+            grid.innerHTML = '';
+            APP.data.serverStates = [];
+
+            for (let i = 1; i <= APP.config.servers; i++) {
+                APP.data.serverStates.push({ id: i, startTs: null });
+                createButtonServerUI(grid, i, null);
+            }
+        }
+
+        function createButtonServerUI(grid, i, startTs) {
+            const btn = document.createElement('button');
+            btn.id = `srv-btn-${i}`;
+            btn.className = `border-2 border-black bg-white rounded-sm p-4 flex flex-col items-center justify-center transition-all brutal-btn brutal-shadow hover:bg-gray-50`;
+            
+            btn.innerHTML = `
+                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 srv-title">Server ${i}</span>
+                <span class="font-black text-xl srv-label">FREE</span>
+                <span class="text-[9px] font-bold text-gray-400 mt-2 uppercase srv-action bg-gray-100 px-2 py-0.5 rounded-sm">Call Next</span>
+            `;
+            btn.onclick = () => handleServerClick(i);
+            grid.appendChild(btn);
+
+            if (startTs !== null) forceServerBusyState(i);
+        }
+
+        function toggleObservation() {
+            const btn = document.getElementById('btn-toggle');
+            APP.config.location = document.getElementById('loc-input').value;
+
+            if (!APP.isRecording) {
+                // START RECORDING
+                APP.targetSeconds = getTargetSeconds();
+                if (APP.targetSeconds <= 0) { UI.showToast("Durasi observasi tidak boleh 0!", "error"); return; }
+
+                APP.isRecording = true;
+                APP.elapsedSeconds = 0;
+                APP.startTimestamp = Date.now(); 
+                APP.data.totalArrivals = 0;
+                APP.data.activeQueue = 0;
+                APP.data.serviceLogs = [];
+                
+                buildServerGrid();
+                resumeRecordingUI();
+                UI.showToast("Merekam Observasi. Fokus!", "success");
+
+            } else {
+                // MANUAL STOP
+                if (APP.elapsedSeconds < APP.targetSeconds) {
+                    UI.showModal(
+                        "Hentikan Rekaman?", 
+                        "Waktu belum mencapai target. Apakah Anda yakin ingin memotong dan menyelesaikan sesi ini?", 
+                        "Akhiri Sekarang", 
+                        () => stopObservation(false)
+                    );
+                } else { stopObservation(false); }
+            }
+        }
+
+        function resumeRecordingUI() {
+            const btn = document.getElementById('btn-toggle');
+            const setupPanel = document.getElementById('setup-panel');
+            const counterPanel = document.getElementById('counter-panel');
+
+            // Set UI to Recording Mode
+            setupPanel.classList.add('hidden');
+            counterPanel.classList.remove('hidden');
+            counterPanel.classList.add('flex');
+            document.getElementById('status-indicator').classList.remove('hidden');
+            document.getElementById('status-text').innerText = "Recording Active";
+            document.getElementById('status-text').classList.replace('text-gray-500', 'text-red-600');
+            btn.innerText = "STOP RECORDING";
+            btn.classList.replace('bg-black', 'bg-red-600');
+            btn.classList.replace('hover:bg-gray-800', 'hover:bg-red-700');
+            setupPanel.classList.remove('hidden'); 
+            Array.from(setupPanel.children).forEach((child, index) => { if(index < 3) child.classList.add('hidden'); });
+
+            // Restore Grid if refreshing
+            if (document.getElementById('server-grid').children.length === 0) {
+                const grid = document.getElementById('server-grid');
+                APP.data.serverStates.forEach(srv => {
+                    createButtonServerUI(grid, srv.id, srv.startTs);
+                });
+            }
+
+            requestWakeLock();
+            updateTrackerUI();
+            updateTimerDisplay();
+            saveState();
+
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                APP.elapsedSeconds = Math.floor((now - APP.startTimestamp) / 1000);
+                updateTimerDisplay();
+                saveState();
+                if (APP.elapsedSeconds >= APP.targetSeconds) stopObservation(true);
+            }, 1000);
+        }
+
+        function forceServerBusyState(id) {
+            const btn = document.getElementById(`srv-btn-${id}`);
+            if(!btn) return;
+            const title = btn.querySelector('.srv-title');
+            const label = btn.querySelector('.srv-label');
+            const action = btn.querySelector('.srv-action');
+            
+            btn.classList.replace('bg-white', 'bg-black');
+            btn.classList.replace('hover:bg-gray-50', 'hover:bg-gray-900');
+            title.classList.replace('text-gray-500', 'text-gray-400');
+            label.innerText = "BUSY";
+            label.classList.add('text-white');
+            action.innerText = "Finish";
+            action.classList.replace('bg-gray-100', 'bg-gray-800');
+        }
+
+        function stopObservation(isAutoStop) {
+            APP.isRecording = false;
+            APP.hasData = true;
+            clearInterval(timerInterval);
+            releaseWakeLock();
+            
+            // Layanan yang masih berjalan saat observasi berakhir otomatis diabaikan:
+            // durasinya terpotong sehingga akan membuat μ terlalu besar (tidak valid).
+            APP.data.serverStates.forEach(srv => {
+                if (srv.startTs !== null) {
+                    if (!isAutoStop) {
+                        const duration = (Date.now() - srv.startTs) / 1000;
+                        if (duration > 0) APP.data.serviceLogs.push(duration);
+                    }
+                    srv.startTs = null;
+                }
+            });
+            
+            const btn = document.getElementById('btn-toggle');
+            const setupPanel = document.getElementById('setup-panel');
+            const counterPanel = document.getElementById('counter-panel');
+
+            document.getElementById('status-indicator').classList.add('hidden');
+            document.getElementById('status-text').innerText = "Standby Mode";
+            document.getElementById('status-text').classList.replace('text-red-600', 'text-gray-500');
+            
+            Array.from(setupPanel.children).forEach((child) => child.classList.remove('hidden'));
+            btn.innerText = "START NEW RECORDING";
+            btn.classList.replace('bg-red-600', 'bg-black');
+            btn.classList.replace('hover:bg-red-700', 'hover:bg-gray-800');
+            
+            counterPanel.classList.add('hidden');
+            counterPanel.classList.remove('flex');
+            
+            saveState();
+            if (isAutoStop) UI.showToast("Waktu Target Telah Habis. Observasi Selesai!", "success");
+            switchView('data');
+        }
+
+        function updateTimerDisplay() {
+            const rem = Math.max(0, APP.targetSeconds - APP.elapsedSeconds);
+            const h = String(Math.floor(rem / 3600)).padStart(2, '0');
+            const m = String(Math.floor((rem % 3600) / 60)).padStart(2, '0');
+            const s = String(rem % 60).padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+        }
+
+        function recordArrival() {
+            if (!APP.isRecording) return;
+            APP.data.totalArrivals++;
+            APP.data.activeQueue++;
+            updateTrackerUI();
+            saveState();
+            
+            const counter = document.getElementById('count-queue');
+            counter.classList.add('text-blue-600', 'scale-110');
+            setTimeout(() => counter.classList.remove('text-blue-600', 'scale-110'), 150);
+        }
+
+        function handleServerClick(id) {
+            if (!APP.isRecording) return;
+            
+            const srv = APP.data.serverStates.find(s => s.id === id);
+            if (!srv) return;
+            const btn = document.getElementById(`srv-btn-${id}`);
+            const title = btn.querySelector('.srv-title');
+            const label = btn.querySelector('.srv-label');
+            const action = btn.querySelector('.srv-action');
+            
+            if (srv.startTs === null) {
+                if (APP.data.activeQueue <= 0) {
+                    UI.showToast("Barisan Kosong! Tunggu pelanggan datang lalu tekan +1.", "warning");
+                    return;
+                }
+                APP.data.activeQueue--;
+                srv.startTs = Date.now();
+                forceServerBusyState(id);
+                updateTrackerUI();
+
+            } else {
+                // Durasi diukur dari timestamp milidetik, bukan tick timer 1 detik,
+                // agar presisi μ tetap akurat pada layanan yang singkat.
+                const duration = (Date.now() - srv.startTs) / 1000;
+                srv.startTs = null;
+
+                // Abaikan durasi 0 (tidak sengaja) agar rata-rata μ tidak terdistorsi.
+                if (duration > 0) {
+                    APP.data.serviceLogs.push(duration);
+                }
+                
+                btn.classList.replace('bg-black', 'bg-white');
+                btn.classList.replace('hover:bg-gray-900', 'hover:bg-gray-50');
+                title.classList.replace('text-gray-400', 'text-gray-500');
+                label.innerText = "FREE";
+                label.classList.remove('text-white');
+                action.innerText = "Call Next";
+                action.classList.replace('bg-gray-800', 'bg-gray-100');
+                
+                updateTrackerUI();
+            }
+            saveState();
+        }
+
+        function updateTrackerUI() {
+            document.getElementById('count-queue').innerText = APP.data.activeQueue;
+            document.getElementById('stat-total-in').innerText = APP.data.totalArrivals;
+            document.getElementById('stat-total-served').innerText = APP.data.serviceLogs.length;
+        }
+
+        // === 6. DATA ANALYSIS & CALC ===
+        function resetData() {
+            UI.showModal(
+                "Hapus Log Observasi?",
+                "Tindakan ini tidak bisa dibatalkan. Semua data perhitungan di memori akan lenyap.",
+                "Hapus Data",
+                () => {
+                    APP.hasData = false;
+                    APP.isRecording = false;
+                    APP.elapsedSeconds = 0;
+                    APP.startTimestamp = null;
+                    APP.data.totalArrivals = 0;
+                    APP.data.activeQueue = 0;
+                    APP.data.serviceLogs = [];
+                    APP.data.serverStates = [];
+                    localStorage.removeItem('qt_state_v1');
+                    renderDataAnalysis();
+                    UI.showToast("Data log telah dibersihkan.", "success");
+                }
+            );
+        }
+
+        function renderDataAnalysis() {
+            const emptyState = document.getElementById('data-empty-state');
+            const contentState = document.getElementById('data-content');
+
+            if (!APP.hasData) {
+                emptyState.classList.remove('hidden');
+                contentState.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            contentState.classList.remove('hidden');
+
+            const totalArr = APP.data.totalArrivals;
+            const totalSrv = APP.data.serviceLogs.length;
+            const s = APP.config.servers;
+            const timeHours = APP.elapsedSeconds / 3600;
+
+            document.getElementById('rep-arrivals').innerText = totalArr;
+            document.getElementById('rep-served').innerText = totalSrv;
+            document.getElementById('rep-s').innerText = s;
+            document.getElementById('rep-time').innerText = `${timeHours.toFixed(2)} hr`;
+
+            // Durasi 0 membuat λ tak terhingga; data observasi belum valid.
+            if (timeHours <= 0) {
+                document.getElementById('rep-lambda').innerText = "0.00";
+                document.getElementById('rep-mu').innerText = "0.00";
+                calculateMMS(0, 0, s);
+                return;
+            }
+
+            const lambda = totalArr / timeHours; 
+            
+            let mu = 0; 
+            if (totalSrv > 0) {
+                const totalDurSecs = APP.data.serviceLogs.reduce((a,b) => a+b, 0);
+                const avgDurSecs = totalDurSecs / totalSrv;
+                mu = avgDurSecs > 0 ? 3600 / avgDurSecs : 0;
+            }
+
+            document.getElementById('rep-lambda').innerText = lambda.toFixed(2);
+            document.getElementById('rep-mu').innerText = mu.toFixed(2);
+
+            calculateMMS(lambda, mu, s);
+        }
+
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let res = 1;
+            for(let i=2; i<=n; i++) res *= i;
+            return res;
+        }
+
+        function calculateMMS(lambda, mu, s) {
+            const warningBox = document.getElementById('unstable-warning');
+            const concText = document.getElementById('conclusion-text');
+
+            if (lambda === 0 || mu === 0) {
+                resetResultsUI("-");
+                warningBox.classList.add('hidden');
+                concText.innerHTML = `<div class="p-4 bg-gray-100 border-l-4 border-gray-400"><p class="text-sm text-gray-700 font-medium">Data observasi lapangan tidak cukup (belum ada kedatangan atau pelayanan yang tuntas tercatat) untuk diproses ke dalam model analitis matematis.</p></div>`;
+                return;
+            }
+
+            // Rumus M/M/s 100% Identik dengan Slide Dosen
+            const P = lambda / (s * mu);
+
+            if (P >= 1) {
+                warningBox.classList.remove('hidden');
+                resetResultsUI("∞");
+                document.getElementById('calc-p').innerText = `${(P * 100).toFixed(1)}%`;
+                document.getElementById('calc-po').innerText = "0%";
+                
+                // UX: Kesimpulan Mode Overload
+                concText.innerHTML = `
+                    <div class="mb-3">
+                        <span class="font-bold text-xs text-gray-500 uppercase tracking-widest">Status Operasional:</span> <br>
+                        <span class="text-lg font-black uppercase text-red-600">Sistem Kewalahan (Overload)</span>
+                    </div>
+                    <p class="mb-3 text-sm text-gray-700 leading-relaxed font-medium text-justify">
+                        Laju kedatangan pelanggan rata-rata mencapai <strong>${lambda.toFixed(1)} orang/jam</strong>, sedangkan kecepatan maksimal seluruh pelayan/kasir (jika bekerja tanpa henti sekalipun) hanya mampu melayani <strong>${(s * mu).toFixed(1)} orang/jam</strong>. Nilai beban kerja (utilitas) mencapai <strong>${(P * 100).toFixed(1)}%</strong>. Karena beban lebih besar dari kapasitas batas teori (lebih dari 100%), antrean ini dipastikan akan terus mengular menjadi tidak terhingga jika waktu operasional tidak dibatasi.
+                    </p>
+                    <div class="bg-gray-100 p-4 border-l-4 border-black mt-4">
+                        <span class="font-bold text-xs uppercase tracking-widest block mb-2">Rekomendasi Mutlak:</span>
+                        <span class="text-sm text-gray-800 font-medium leading-relaxed">Sistem saat ini cacat operasi. Anda harus segera merekrut pegawai tambahan untuk membuka kasir/server baru, atau merombak sistem pelayanan (seperti menggunakan teknologi self-service) agar setiap pelanggan dilayani jauh lebih cepat.</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            warningBox.classList.add('hidden');
+
+            let sumTerm = 0;
+            for (let n = 0; n < s; n++) { sumTerm += Math.pow(lambda / mu, n) / factorial(n); }
+            const tailTerm = (Math.pow(lambda / mu, s) / factorial(s)) * (1 / (1 - P));
+            const Po = 1 / (sumTerm + tailTerm);
+            const Lq = (Po * Math.pow(lambda / mu, s) * P) / (factorial(s) * Math.pow(1 - P, 2));
+            const Ls = Lq + (lambda / mu);
+            const Wq = Lq / lambda; 
+            const Ws = Wq + (1 / mu); 
+
+            document.getElementById('calc-p').innerText = `${(P * 100).toFixed(2)}%`;
+            document.getElementById('calc-po').innerText = `${(Po * 100).toFixed(2)}%`;
+            document.getElementById('calc-lq').innerText = Lq.toFixed(4);
+            document.getElementById('calc-ls').innerText = Ls.toFixed(4);
+            
+            document.getElementById('calc-wq').innerText = `${Wq.toFixed(4)} hr`;
+            document.getElementById('calc-wq-min').innerText = `≈ ${(Wq * 60).toFixed(2)} Menit`;
+            
+            document.getElementById('calc-ws').innerText = `${Ws.toFixed(4)} hr`;
+            document.getElementById('calc-ws-min').innerText = `≈ ${(Ws * 60).toFixed(2)} Menit`;
+
+            // Kesimpulan menurut ambang utilitas pelayan
+            let statusTitle, statusColor, analysisText, recommendationText;
+
+            if (P < 0.4) {
+                statusTitle = "Kurang Dimanfaatkan (Underutilized)";
+                statusColor = "text-blue-600";
+                analysisText = `Tingkat kesibukan pelayan hanya <strong>${(P * 100).toFixed(1)}%</strong>, dengan probabilitas <strong>${(Po * 100).toFixed(1)}%</strong> seluruh pelayan menganggur. Waktu tunggu pelanggan sangat memuaskan, namun sebagian besar kapasitas pelayan terbuang sia-sia.`;
+                recommendationText = "Pertimbangkan untuk <strong>mengurangi jumlah kasir yang aktif</strong> agar biaya operasional lebih hemat tanpa menurunkan kualitas pelayanan.";
+            } else if (P <= 0.8) {
+                statusTitle = "Sangat Optimal & Efisien";
+                statusColor = "text-green-600";
+                analysisText = `Beban kerja pelayan di angka <strong>${(P * 100).toFixed(1)}%</strong>. Ini zona seimbang antara menekan biaya operasional dan menjaga kepuasan waktu tunggu pelanggan.`;
+                recommendationText = `<strong>Pertahankan jumlah pelayan saat ini.</strong> Kapasitas saat ini memadai untuk menangani rata-rata ${lambda.toFixed(1)} orang per jam.`;
+            } else {
+                statusTitle = "Sangat Sibuk & Rentan";
+                statusColor = "text-yellow-600";
+                analysisText = `Utilitas pelayan mencapai <strong>${(P * 100).toFixed(1)}%</strong>. Antrean rata-rata menumpuk <strong>${Lq.toFixed(1)} orang</strong>. Lonjakan kecil kedatangan acak dapat memicu pertumbuhan antrean yang cepat.`;
+                recommendationText = "Siapkan <strong>penambahan kasir cadangan</strong> untuk jam sibuk, dan pastikan tersedia ruang tunggu yang memadai.";
+            }
+
+            const timeNarrative = `Rata-rata pelanggan berada di lokasi selama <strong>${(Ws * 60).toFixed(1)} menit</strong>, dengan <strong>${(Wq * 60).toFixed(1)} menit</strong> di antaranya dihabiskan untuk menunggu giliran.`;
+
+            concText.innerHTML = `
+                <div class="mb-4">
+                    <span class="font-bold text-xs text-gray-500 uppercase tracking-widest">Status Operasional:</span> <br>
+                    <span class="text-xl font-black uppercase tracking-tight ${statusColor}">${statusTitle}</span>
+                </div>
+                <p class="mb-4 text-sm text-gray-700 leading-relaxed font-medium text-justify">${analysisText}</p>
+                <p class="mb-5 text-sm text-gray-700 leading-relaxed font-medium text-justify border-l-2 border-gray-300 pl-4 italic">${timeNarrative}</p>
+                <div class="bg-gray-100 p-5 border-l-4 border-black brutal-shadow-sm">
+                    <span class="font-black text-xs uppercase tracking-widest block mb-2 flex items-center gap-2"><i data-lucide="lightbulb" class="w-4 h-4"></i> Solusi & Tindakan:</span>
+                    <span class="text-sm text-gray-800 font-medium leading-relaxed block text-justify">${recommendationText}</span>
+                </div>
+            `;
+            
+            // Re-render icon lucide yang baru di-inject
+            lucide.createIcons({ root: concText });
+        }
+
+        function resetResultsUI(val) {
+            ['calc-p','calc-po','calc-lq','calc-ls','calc-wq','calc-ws'].forEach(id => document.getElementById(id).innerText = val);
+            ['calc-wq-min','calc-ws-min'].forEach(id => document.getElementById(id).innerText = "");
+        }
+
+        // === 7. EXPORT CSV ===
+        function exportData() {
+            if (!APP.hasData) { UI.showToast("Tidak ada data untuk diekspor", "error"); return; }
+            
+            // Escape koma, tanda kutip, dan baris baru agar nilai tidak merusak struktur CSV.
+            const csvCell = (val) => `"${String(val).replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+            const timeHours = APP.elapsedSeconds / 3600;
+            const totalSrv = APP.data.serviceLogs.length;
+            const lambda = timeHours > 0 ? APP.data.totalArrivals / timeHours : 0;
+            const totalDurSecs = APP.data.serviceLogs.reduce((a,b) => a+b, 0);
+            const mu = totalSrv > 0 && totalDurSecs > 0 ? 3600 / (totalDurSecs / totalSrv) : 0;
+
+            let csv = "Metrics,Value\n";
+            csv += `Location,${csvCell(APP.config.location)}\n`;
+            csv += `Total Arrivals,${APP.data.totalArrivals}\n`;
+            csv += `Total Served,${totalSrv}\n`;
+            csv += `Total Duration (s),${APP.elapsedSeconds}\n`;
+            csv += `Observation Time (hr),${timeHours.toFixed(4)}\n`;
+            csv += `Number of Servers (s),${APP.config.servers}\n`;
+            csv += `Arrival Rate (lambda/hr),${lambda.toFixed(4)}\n`;
+            csv += `Service Rate (mu/hr/server),${mu.toFixed(4)}\n\n`;
+            csv += "=== Service Logs (Duration in Seconds) ===\n";
+            
+            APP.data.serviceLogs.forEach((dur, i) => { csv += `Service ${i+1},${dur.toFixed(3)}\n`; });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Queue_Report_${new Date().getTime()}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            UI.showToast("Dokumen CSV Berhasil Diunduh", "success");
+        }
+
+    </script>
+</body>
+</html>
